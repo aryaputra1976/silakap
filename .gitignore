@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Runtime / uploads / backups (private data — never commit)
+api/uploads/
+api/backups/
+api/logs/
+
+# PM2 logs
+*.err.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Codex / planning docs (opsional — hapus baris ini jika ingin di-commit)
+CODEX_*.md
+CODEX_PROMPT*.md
+CODEX_UI*.md
+CODEX_FE*.md

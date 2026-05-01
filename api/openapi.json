@@ -1,0 +1,902 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SILAKAP API",
+    "version": "1.0.0",
+    "description": "Dokumentasi API Sistem Informasi Layanan Administrasi Kepegawaian."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "API prefix"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Dashboard"
+    },
+    {
+      "name": "Analytics"
+    },
+    {
+      "name": "Layanan"
+    },
+    {
+      "name": "ASN"
+    },
+    {
+      "name": "Integrasi"
+    },
+    {
+      "name": "Notifikasi"
+    },
+    {
+      "name": "Laporan"
+    },
+    {
+      "name": "Pengaturan"
+    },
+    {
+      "name": "Maintenance"
+    },
+    {
+      "name": "Jobs"
+    },
+    {
+      "name": "Admin"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "admin"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "passwordLama",
+          "passwordBaru",
+          "konfirmasiPassword"
+        ],
+        "properties": {
+          "passwordLama": {
+            "type": "string",
+            "format": "password"
+          },
+          "passwordBaru": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8
+          },
+          "konfirmasiPassword": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login pengguna",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil"
+          },
+          "401": {
+            "description": "Username atau password salah"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh access token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "refreshToken"
+                ],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token berhasil diperbarui"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Profil pengguna login",
+        "responses": {
+          "200": {
+            "description": "Data pengguna aktif"
+          }
+        }
+      }
+    },
+    "/auth/change-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Ganti password pengguna login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password berhasil diubah"
+          }
+        }
+      }
+    },
+    "/dashboard/ringkasan": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Ringkasan dashboard",
+        "responses": {
+          "200": {
+            "description": "Statistik ringkasan"
+          }
+        }
+      }
+    },
+    "/dashboard/per-jenis-layanan": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Statistik per jenis layanan",
+        "responses": {
+          "200": {
+            "description": "Data per jenis layanan"
+          }
+        }
+      }
+    },
+    "/dashboard/antrian-per-tahap": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Jumlah antrian per tahap",
+        "responses": {
+          "200": {
+            "description": "Data antrian per tahap"
+          }
+        }
+      }
+    },
+    "/dashboard/analytics/sla-trend": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Trend status SLA dalam rentang hari",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 14,
+              "maximum": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trend SLA harian"
+          }
+        }
+      }
+    },
+    "/dashboard/analytics/throughput": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Trend usulan masuk dan selesai",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Throughput layanan harian"
+          }
+        }
+      }
+    },
+    "/dashboard/analytics/bottleneck": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Bottleneck tahapan aktif",
+        "responses": {
+          "200": {
+            "description": "Jumlah dan rata-rata waktu tunggu per tahap"
+          }
+        }
+      }
+    },
+    "/dashboard/analytics/ranking-opd": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Ranking OPD berdasarkan volume usulan",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranking OPD"
+          }
+        }
+      }
+    },
+    "/layanan": {
+      "get": {
+        "tags": [
+          "Layanan"
+        ],
+        "summary": "Daftar usulan layanan",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tahap",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar usulan"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Layanan"
+        ],
+        "summary": "Buat draft usulan layanan",
+        "responses": {
+          "201": {
+            "description": "Usulan dibuat"
+          }
+        }
+      }
+    },
+    "/layanan/{id}": {
+      "get": {
+        "tags": [
+          "Layanan"
+        ],
+        "summary": "Detail usulan layanan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail usulan"
+          }
+        }
+      }
+    },
+    "/layanan/{id}/dokumen": {
+      "post": {
+        "tags": [
+          "Layanan"
+        ],
+        "summary": "Upload dokumen usulan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "jenisDokumen": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Dokumen berhasil diunggah"
+          }
+        }
+      }
+    },
+    "/layanan/{id}/dokumen-output": {
+      "get": {
+        "tags": [
+          "Layanan"
+        ],
+        "summary": "Download dokumen output hasil TTE",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stream file dokumen output"
+          },
+          "404": {
+            "description": "Dokumen output tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/asn": {
+      "get": {
+        "tags": [
+          "ASN"
+        ],
+        "summary": "Daftar ASN",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unitOrganisasiId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "golonganId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusPegawai",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar ASN"
+          }
+        }
+      }
+    },
+    "/asn/peremajaan": {
+      "get": {
+        "tags": [
+          "ASN"
+        ],
+        "summary": "Daftar pengajuan peremajaan ASN",
+        "responses": {
+          "200": {
+            "description": "Daftar peremajaan ASN"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ASN"
+        ],
+        "summary": "Buat pengajuan peremajaan ASN",
+        "responses": {
+          "201": {
+            "description": "Pengajuan peremajaan dibuat"
+          }
+        }
+      }
+    },
+    "/asn/peremajaan/{id}/approve": {
+      "put": {
+        "tags": [
+          "ASN"
+        ],
+        "summary": "Approve atau reject peremajaan ASN",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status approval diperbarui"
+          }
+        }
+      }
+    },
+    "/integrasi/import/asn": {
+      "post": {
+        "tags": [
+          "Integrasi"
+        ],
+        "summary": "Import data ASN dari Excel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Import ASN diproses"
+          }
+        }
+      }
+    },
+    "/integrasi/log": {
+      "get": {
+        "tags": [
+          "Integrasi"
+        ],
+        "summary": "Daftar log import SIASN",
+        "responses": {
+          "200": {
+            "description": "Log import"
+          }
+        }
+      }
+    },
+    "/integrasi/log/{id}/errors": {
+      "get": {
+        "tags": [
+          "Integrasi"
+        ],
+        "summary": "Export error import ke Excel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File Excel error import"
+          }
+        }
+      }
+    },
+    "/notifikasi": {
+      "get": {
+        "tags": [
+          "Notifikasi"
+        ],
+        "summary": "Daftar notifikasi pengguna",
+        "responses": {
+          "200": {
+            "description": "Daftar notifikasi"
+          }
+        }
+      }
+    },
+    "/notifikasi/count": {
+      "get": {
+        "tags": [
+          "Notifikasi"
+        ],
+        "summary": "Jumlah notifikasi pengguna",
+        "responses": {
+          "200": {
+            "description": "Jumlah notifikasi"
+          }
+        }
+      }
+    },
+    "/pengaturan/health": {
+      "get": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Health dashboard Admin Sistem",
+        "responses": {
+          "200": {
+            "description": "Status runtime, database, storage, backup, dan ENV audit"
+          }
+        }
+      }
+    },
+    "/pengaturan/maintenance/arsip-older-than-1y": {
+      "post": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Arsipkan usulan selesai/ditolak yang berumur lebih dari satu tahun",
+        "responses": {
+          "200": {
+            "description": "Jumlah usulan yang diarsipkan"
+          }
+        }
+      }
+    },
+    "/pengaturan/maintenance/db-backup": {
+      "post": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Trigger backup database manual",
+        "responses": {
+          "200": {
+            "description": "Metadata file backup"
+          }
+        }
+      }
+    },
+    "/pengaturan/maintenance/cleanup-orphan-files": {
+      "post": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Scan atau hapus file upload yang tidak direferensikan database",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dryRun": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ringkasan orphan file"
+          }
+        }
+      }
+    },
+    "/pengaturan/email/status": {
+      "get": {
+        "tags": [
+          "Pengaturan"
+        ],
+        "summary": "Status konfigurasi SMTP",
+        "responses": {
+          "200": {
+            "description": "Status SMTP"
+          }
+        }
+      }
+    },
+    "/pengaturan/notifikasi": {
+      "get": {
+        "tags": [
+          "Pengaturan"
+        ],
+        "summary": "Daftar konfigurasi notifikasi multi-channel",
+        "responses": {
+          "200": {
+            "description": "Konfigurasi notifikasi"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Pengaturan"
+        ],
+        "summary": "Buat konfigurasi notifikasi",
+        "responses": {
+          "201": {
+            "description": "Konfigurasi dibuat"
+          }
+        }
+      }
+    },
+    "/jobs/db-backup": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Trigger job backup database",
+        "responses": {
+          "200": {
+            "description": "Backup job selesai"
+          }
+        }
+      }
+    },
+    "/jobs/env-audit": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Audit environment production",
+        "responses": {
+          "200": {
+            "description": "Hasil audit ENV"
+          }
+        }
+      }
+    },
+    "/laporan/harian": {
+      "get": {
+        "tags": [
+          "Laporan"
+        ],
+        "summary": "Daftar laporan harian",
+        "responses": {
+          "200": {
+            "description": "Daftar laporan harian"
+          }
+        }
+      }
+    },
+    "/laporan/bulanan": {
+      "get": {
+        "tags": [
+          "Laporan"
+        ],
+        "summary": "Daftar laporan bulanan",
+        "responses": {
+          "200": {
+            "description": "Daftar laporan bulanan"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Manajemen pengguna",
+        "responses": {
+          "200": {
+            "description": "Daftar pengguna"
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Manajemen role",
+        "responses": {
+          "200": {
+            "description": "Daftar role"
+          }
+        }
+      }
+    }
+  }
+}

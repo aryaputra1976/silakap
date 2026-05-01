@@ -1,0 +1,39 @@
+RewriteEngine On
+
+# ============================================================
+# SILAKAP public_html reverse proxy
+# - /api/*   -> Express API process
+# - all else -> Next.js web process
+# ============================================================
+
+# Force HTTPS after AutoSSL is active.
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# API reverse proxy. Keep /api/v1 path intact for Express.
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ http://127.0.0.1:3100/api/$1 [P,L,QSA]
+
+# Next.js static/runtime assets.
+RewriteCond %{REQUEST_URI} ^/_next/
+RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L,QSA]
+
+# Frontend pages.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L,QSA]
+
+# Security headers.
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+# Hide sensitive files if accidentally copied into public_html.
+<FilesMatch "^(\.env|\.env\..*|package-lock\.json|package\.json|tsconfig\.json|next\.config\..*|ecosystem\.config\.js)$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(log|prisma|ts|tsx|map|sql|gz)$">
+  Require all denied
+</FilesMatch>

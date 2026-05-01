@@ -1,0 +1,42 @@
+module.exports = {
+  apps: [
+    {
+      name: 'silakap-api',
+      cwd: '/home/username/api',
+      script: 'dist/server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      watch: false,
+      max_memory_restart: '256M',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3100,
+      },
+      error_file: '/home/username/logs/silakap-api-error.log',
+      out_file: '/home/username/logs/silakap-api-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+      restart_delay: 3000,
+      max_restarts: 10,
+    },
+    {
+      name: 'silakap-web',
+      cwd: '/home/username/web',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3001',
+      instances: 1,
+      exec_mode: 'fork',
+      watch: false,
+      max_memory_restart: '512M',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+        NEXT_PUBLIC_API_URL: 'https://domain-anda.go.id/api/v1',
+      },
+      error_file: '/home/username/logs/silakap-web-error.log',
+      out_file: '/home/username/logs/silakap-web-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+      restart_delay: 3000,
+      max_restarts: 10,
+    },
+  ],
+}

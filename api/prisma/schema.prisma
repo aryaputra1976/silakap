@@ -1,0 +1,1040 @@
+// prisma/schema.prisma
+// SILAKAP - Sistem Informasi Layanan Administrasi Kepegawaian
+// Prisma ORM Schema — Enterprise Grade
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =====================================================
+// ENUMS — enforce valid values at DB level
+// =====================================================
+
+enum StatusPegawai {
+  Aktif
+  Cuti
+  Pensiun
+  Meninggal
+  Berhenti
+  Diberhentikan
+}
+
+enum StatusUsulan {
+  Draft
+  Diajukan
+  VerifikasiAP
+  VerifikasiAM
+  QualityControl
+  ApprovalKabid
+  ApprovalKepalaBadan
+  Selesai
+  Ditolak
+  Dikembalikan
+  Diarsipkan
+}
+
+enum TahapUsulan {
+  AP
+  AM
+  AD
+  Kabid
+  KepalaBadan
+}
+
+enum StatusSla {
+  OK
+  Warning
+  Overdue
+  Selesai
+}
+
+enum StatusTte {
+  Draft
+  PendingTte
+  Signed
+}
+
+enum StatusRevisi {
+  Menunggu
+  Direvisi
+  Selesai
+}
+
+enum StatusApproval {
+  Pending
+  Approved
+  Rejected
+}
+
+enum StatusImport {
+  Pending
+  Processing
+  Success
+  PartialFail
+  Failed
+}
+
+enum JenisLaporan {
+  Harian
+  Bulanan
+}
+
+enum FormatLaporan {
+  PDF
+  Excel
+}
+
+enum ChannelNotifikasi {
+  InApp
+  Email
+  WhatsApp
+  SMS
+}
+
+// =====================================================
+// 1. REFERENSI MASTER DATA
+// =====================================================
+
+model RefGolongan {
+  id        BigInt   @id @default(autoincrement())
+  kode      String   @unique @db.VarChar(10)
+  nama      String   @db.VarChar(100)
+  roman     String?  @db.VarChar(10)
+  tingkat   Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asnGolongan  Asn[]
+  refGajiPokok RefGajiPokok[]
+
+  @@map("ref_golongan")
+  @@index([kode])
+}
+
+model RefGajiPokok {
+  id         BigInt   @id @default(autoincrement())
+  golonganId BigInt
+  masaKerja  Int
+  gaji       Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  golongan RefGolongan @relation(fields: [golonganId], references: [id], onDelete: Restrict)
+
+  @@unique([golonganId, masaKerja], name: "uk_golongan_masa_kerja")
+  @@map("ref_gaji_pokok")
+  @@index([golonganId])
+}
+
+model RefUnitOrganisasi {
+  id        String   @id @db.VarChar(36)
+  nama      String   @db.VarChar(255)
+  idAtasan  String?  @db.VarChar(36)
+  level     Int      @default(1)
+  isOpd     Boolean  @default(false) @map("is_opd")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  atasan        RefUnitOrganisasi?     @relation("UnitHierarchy", fields: [idAtasan], references: [id], onDelete: SetNull)
+  subUnit       RefUnitOrganisasi[]    @relation("UnitHierarchy")
+  asnUnit       Asn[]
+  jabatanStruk  RefJabatanStruktural[]
+  user          User[]
+  usulanLayanan UsulanLayanan[]
+
+  @@map("ref_unit_organisasi")
+  @@index([nama])
+  @@index([idAtasan])
+}
+
+model RefJenisJabatan {
+  id         BigInt   @id @default(autoincrement())
+  nama       String   @unique @db.VarChar(50)
+  keterangan String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+
+  asn Asn[]
+
+  @@map("ref_jenis_jabatan")
+}
+
+model RefJabatanStruktural {
+  id               String   @id @db.VarChar(36)
+  nama             String   @db.VarChar(255)
+  unitOrganisasiId String   @db.VarChar(36)
+  eselonId         Int?     @map("eselon_id")
+  bup              Int      @default(58)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  unitOrganisasi RefUnitOrganisasi @relation(fields: [unitOrganisasiId], references: [id])
+  asn            Asn[]
+
+  @@map("ref_jabatan_struktural")
+  @@index([nama])
+  @@index([unitOrganisasiId])
+}
+
+model RefJabatanFungsional {
+  id        String   @id @db.VarChar(36)
+  nama      String   @db.VarChar(255)
+  jenjang   String?  @db.VarChar(20)
+  bup       Int      @default(65)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asn Asn[]
+
+  @@map("ref_jabatan_fungsional")
+  @@index([nama])
+}
+
+model RefJabatanPelaksana {
+  id        String   @id @db.VarChar(36)
+  nama      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asn Asn[]
+
+  @@map("ref_jabatan_pelaksana")
+  @@index([nama])
+}
+
+model RefPendidikan {
+  id        BigInt   @id @default(autoincrement())
+  kode      String?  @db.VarChar(20)
+  nama      String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+
+  asn Asn[]
+
+  @@map("ref_pendidikan")
+}
+
+// tahunLulus dihapus dari sini — itu data individu ASN, bukan referensi bidang
+model RefBidangPendidikan {
+  id        String   @id @db.VarChar(36)
+  nama      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asn Asn[]
+
+  @@map("ref_bidang_pendidikan")
+  @@index([nama])
+}
+
+model RefAgama {
+  id        Int      @id
+  nama      String   @unique @db.VarChar(50)
+  createdAt DateTime @default(now())
+
+  asn Asn[]
+
+  @@map("ref_agama")
+}
+
+model RefStatusKawin {
+  id        Int      @id
+  nama      String   @unique @db.VarChar(50)
+  createdAt DateTime @default(now())
+
+  asn Asn[]
+
+  @@map("ref_status_kawin")
+}
+
+model RefJenisKelamin {
+  id        Int      @id
+  nama      String   @unique @db.VarChar(50)
+  createdAt DateTime @default(now())
+
+  asn Asn[]
+
+  @@map("ref_jenis_kelamin")
+}
+
+model RefJenisLayanan {
+  id                  BigInt   @id @default(autoincrement())
+  kode                String   @unique @db.VarChar(20)
+  nama                String   @db.VarChar(100)
+  deskripsi           String?  @db.Text
+  butuhTteKepalaBadan Boolean  @default(false) @map("butuh_tte_kepala_badan")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  persyaratanLayanan RefPersyaratanLayanan[]
+  usulanLayanan      UsulanLayanan[]
+  configSla          ConfigSla[]
+  templateDokumen    TemplateDokumen[]
+
+  @@map("ref_jenis_layanan")
+}
+
+model RefPersyaratanLayanan {
+  id              BigInt   @id @default(autoincrement())
+  jenisLayananId  BigInt
+  urutan          Int?
+  namaPersyaratan String   @db.VarChar(255)
+  isRequired      Boolean  @default(true) @map("is_required")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  jenisLayanan RefJenisLayanan @relation(fields: [jenisLayananId], references: [id], onDelete: Cascade)
+
+  @@map("ref_persyaratan_layanan")
+  @@index([jenisLayananId])
+}
+
+// =====================================================
+// 2. DATA ASN UTAMA
+// =====================================================
+
+model Asn {
+  id                  String        @id @db.VarChar(36)
+  nipBaru             String        @unique @db.VarChar(20)
+  nipLama             String?       @db.VarChar(20)
+  nama                String        @db.VarChar(255)
+  gelarDepan          String?       @db.VarChar(50)
+  gelarBelakang       String?       @db.VarChar(100)
+  tempatLahir         String?       @db.VarChar(100)
+  tanggalLahir        DateTime?
+  jenisKelaminId      Int?
+  agamaId             Int?
+  statusKawinId       Int?
+  nik                 String?       @db.VarChar(20)
+  nomorHp             String?       @db.VarChar(20)
+  email               String?       @db.VarChar(100)
+  emailGov            String?       @db.VarChar(100)
+  alamat              String?       @db.Text
+  npwp                String?       @db.VarChar(20)
+  bpjs                String?       @db.VarChar(20)
+  foto                String?       @db.VarChar(255)
+
+  // Status kepegawaian — enum untuk validasi
+  jenisPegawai        String?       @db.VarChar(100)
+  statusPegawai       StatusPegawai @default(Aktif) @map("status_pegawai")
+  kedudukanHukum      String?       @db.VarChar(100)
+
+  // CPNS & PNS
+  nomorSkCpns         String?       @db.VarChar(100)
+  tanggalSkCpns       DateTime?
+  tmtCpns             DateTime?
+  nomorSkPns          String?       @db.VarChar(100)
+  tanggalSkPns        DateTime?
+  tmtPns              DateTime?
+
+  // Golongan
+  golonganId          BigInt?
+  tmtGolongan         DateTime?
+  mkTahun             Int           @default(0)
+  mkBulan             Int           @default(0)
+
+  // Jabatan
+  jenisJabatanId      BigInt?
+  jabatanStrukturaId  String?       @db.VarChar(36) @map("jabatan_struktural_id")
+  jabatanFungsionalId String?       @db.VarChar(36) @map("jabatan_fungsional_id")
+  jabatanPelaksanaId  String?       @db.VarChar(36) @map("jabatan_pelaksana_id")
+  tmtJabatan          DateTime?
+
+  // Pendidikan
+  tingkatPendidikanId BigInt?
+  bidangPendidikanId  String?       @db.VarChar(36) @map("bidang_pendidikan_id")
+  namaSekolah         String?       @db.VarChar(255)
+  tahunLulus          Int?
+
+  // Unit Organisasi
+  unitOrganisasiId    String?       @db.VarChar(36) @map("unit_organisasi_id")
+  lokasiKerja         String?       @db.VarChar(255)
+
+  // Validasi & SIASN
+  nikValid            Boolean       @default(true) @map("nik_valid")
+  flagIkd             Boolean       @default(false) @map("flag_ikd")
+  lastSyncSiasn       DateTime?     @map("last_sync_siasn")
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  deletedAt           DateTime?     @map("deleted_at")
+
+  golongan            RefGolongan?          @relation(fields: [golonganId], references: [id], onDelete: SetNull)
+  jenisJabatan        RefJenisJabatan?      @relation(fields: [jenisJabatanId], references: [id], onDelete: SetNull)
+  jabatanStruktural   RefJabatanStruktural? @relation(fields: [jabatanStrukturaId], references: [id], onDelete: SetNull)
+  jabatanFungsional   RefJabatanFungsional? @relation(fields: [jabatanFungsionalId], references: [id], onDelete: SetNull)
+  jabatanPelaksana    RefJabatanPelaksana?  @relation(fields: [jabatanPelaksanaId], references: [id], onDelete: SetNull)
+  unitOrganisasi      RefUnitOrganisasi?    @relation(fields: [unitOrganisasiId], references: [id], onDelete: SetNull)
+  tingkatPendidikan   RefPendidikan?        @relation(fields: [tingkatPendidikanId], references: [id], onDelete: SetNull)
+  bidangPendidikan    RefBidangPendidikan?  @relation(fields: [bidangPendidikanId], references: [id], onDelete: SetNull)
+  jenisKelamin        RefJenisKelamin?      @relation(fields: [jenisKelaminId], references: [id], onDelete: SetNull)
+  agama               RefAgama?             @relation(fields: [agamaId], references: [id], onDelete: SetNull)
+  statusKawin         RefStatusKawin?       @relation(fields: [statusKawinId], references: [id], onDelete: SetNull)
+
+  user               User[]
+  asnRiwayat         AsnRiwayat[]
+  asnPeremajaan      AsnPeremajaan[]
+  usulanLayanan      UsulanLayanan[]
+  perencanaanPensiun PerencanaanPensiun?
+
+  @@map("asn")
+  @@index([nipBaru])
+  @@index([nama])
+  @@index([unitOrganisasiId])
+  @@index([golonganId])
+  @@index([statusPegawai])
+  @@index([tmtPns])
+  @@index([deletedAt])
+}
+
+model AsnRiwayat {
+  id            BigInt   @id @default(autoincrement())
+  asnId         String   @db.VarChar(36)
+  tipePerubahan String   @db.VarChar(100)
+  dataLama      Json?    @map("data_lama")
+  dataBaru      Json?    @map("data_baru")
+  keterangan    String?  @db.Text
+  // plain string — audit record harus tetap ada meski user dihapus
+  diubahOleh    String?  @db.VarChar(36)
+  createdAt     DateTime @default(now())
+
+  asn Asn @relation(fields: [asnId], references: [id], onDelete: Cascade)
+
+  @@map("asn_riwayat")
+  @@index([asnId])
+  @@index([tipePerubahan])
+  @@index([createdAt])
+}
+
+// =====================================================
+// 3. WORKFLOW LAYANAN KEPEGAWAIAN
+// =====================================================
+
+model UsulanLayanan {
+  id                   String       @id @db.VarChar(36)
+  nomorUsulan          String       @unique @db.VarChar(50)
+  jenisLayananId       BigInt
+  asnId                String       @db.VarChar(36)
+  unitOrganisasiId     String       @db.VarChar(36)
+  diajukanOlehId       String?      @db.VarChar(36) @map("diajukan_oleh_id")
+  tanggalUsulan        DateTime
+
+  status               StatusUsulan @default(Draft)
+  tahapSaatIni         TahapUsulan? @map("tahap_saat_ini")
+
+  tglMasukAp           DateTime?    @map("tgl_masuk_ap")
+  tglMasukAm           DateTime?    @map("tgl_masuk_am")
+  tglMasukAd           DateTime?    @map("tgl_masuk_ad")
+  tglMasukKabid        DateTime?    @map("tgl_masuk_kabid")
+  tglMasukKepalaBadan  DateTime?    @map("tgl_masuk_kepala_badan")
+  tglSelesai           DateTime?    @map("tgl_selesai")
+
+  catatanAp            String?      @db.Text
+  catatanAm            String?      @db.Text
+  catatanAd            String?      @db.Text
+  catatanKabid         String?      @db.Text
+  catatanKepalaBadan   String?      @db.Text
+  alasanPenolakan      String?      @db.Text
+
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  deletedAt            DateTime?    @map("deleted_at")
+
+  jenisLayanan   RefJenisLayanan   @relation(fields: [jenisLayananId], references: [id], onDelete: Restrict)
+  asn            Asn               @relation(fields: [asnId], references: [id], onDelete: Restrict)
+  unitOrganisasi RefUnitOrganisasi @relation(fields: [unitOrganisasiId], references: [id], onDelete: Restrict)
+  diajukanOleh   User?             @relation("UsulanDiajukanOleh", fields: [diajukanOlehId], references: [id], onDelete: SetNull)
+
+  dokumen       UsulanDokumen[]
+  workflowLog   UsulanWorkflowLog[]
+  dokumenOutput UsulanDokumenOutput[]
+  slaTracker    SlaTracker[]
+  usulanRevisi  UsulanRevisi[]
+  arsipUsulan   ArsipUsulan[]
+
+  @@map("usulan_layanan")
+  @@index([jenisLayananId])
+  @@index([asnId])
+  @@index([unitOrganisasiId])
+  @@index([status])
+  @@index([tahapSaatIni])
+  @@index([tanggalUsulan])
+  // composite untuk antrian per tahap
+  @@index([status, tahapSaatIni])
+  @@index([tahapSaatIni, tanggalUsulan])
+  @@index([deletedAt])
+  @@index([deletedAt, status, createdAt])
+  @@index([unitOrganisasiId, status, createdAt])
+  @@index([status, tglSelesai])
+}
+
+model UsulanDokumen {
+  id              BigInt   @id @default(autoincrement())
+  usulanLayananId String   @db.VarChar(36)
+  jenisDokumen    String?  @db.VarChar(100)
+  namaFile        String   @db.VarChar(255)
+  pathFile        String   @db.VarChar(500)
+  ukuran          BigInt?
+  mimeType        String?  @db.VarChar(100)
+  hashFile        String?  @db.VarChar(64)  @map("hash_file")
+  versi           Int      @default(1)
+  uploadOlehId    String?  @db.VarChar(36)  @map("upload_oleh_id")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  usulanLayanan UsulanLayanan @relation(fields: [usulanLayananId], references: [id], onDelete: Cascade)
+  uploadOleh    User?         @relation("DokumenUploadOleh", fields: [uploadOlehId], references: [id], onDelete: SetNull)
+
+  @@map("usulan_dokumen")
+  @@index([usulanLayananId])
+}
+
+model UsulanWorkflowLog {
+  id               BigInt       @id @default(autoincrement())
+  usulanLayananId  String       @db.VarChar(36)
+  dariTahap        TahapUsulan? @map("dari_tahap")
+  keTahap          TahapUsulan? @map("ke_tahap")
+  aksi             String?      @db.VarChar(50)
+  dilakukanOlehId  String?      @db.VarChar(36) @map("dilakukan_oleh_id")
+  catatan          String?      @db.Text
+  createdAt        DateTime     @default(now())
+
+  usulanLayanan UsulanLayanan @relation(fields: [usulanLayananId], references: [id], onDelete: Cascade)
+  dilakukanOleh User?         @relation("WorkflowDilakukanOleh", fields: [dilakukanOlehId], references: [id], onDelete: SetNull)
+
+  @@map("usulan_workflow_log")
+  @@index([usulanLayananId])
+  @@index([createdAt])
+}
+
+model UsulanDokumenOutput {
+  id              BigInt    @id @default(autoincrement())
+  usulanLayananId String    @db.VarChar(36)
+  templateId      BigInt?   @map("template_id")
+  jenisDokumen    String?   @db.VarChar(100)
+  nomorDokumen    String?   @db.VarChar(100)
+  tanggalDokumen  DateTime?
+  namaFile        String?   @db.VarChar(255)
+  pathFile        String?   @db.VarChar(500)
+  hashFile        String?   @db.VarChar(64)  @map("hash_file")
+  tteOlehId       String?   @db.VarChar(36)  @map("tte_oleh_id")
+  tglTte          DateTime? @map("tgl_tte")
+  statusTte       StatusTte @default(Draft)  @map("status_tte")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  usulanLayanan UsulanLayanan    @relation(fields: [usulanLayananId], references: [id], onDelete: Cascade)
+  template      TemplateDokumen? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  tteOleh       User?            @relation("DokumenTteOleh", fields: [tteOlehId], references: [id], onDelete: SetNull)
+
+  @@map("usulan_dokumen_output")
+  @@index([usulanLayananId])
+  @@index([usulanLayananId, statusTte])
+  @@index([statusTte])
+}
+
+// =====================================================
+// 4. PENGGUNA & ROLE
+// =====================================================
+
+model Role {
+  id          BigInt    @id @default(autoincrement())
+  nama        String    @unique @db.VarChar(50)
+  deskripsi   String?   @db.VarChar(255)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime? @map("deleted_at")
+
+  user           User[]
+  rolePermission RolePermission[]
+
+  @@map("role")
+  @@index([deletedAt])
+}
+
+model User {
+  id                 String    @id @db.VarChar(36)
+  username           String    @unique @db.VarChar(50)
+  passwordHash       String    @db.VarChar(255)        @map("password_hash")
+  namaLengkap        String    @db.VarChar(255)
+  email              String    @unique @db.VarChar(100)
+  nomorHp            String?   @db.VarChar(20)
+  unitOrganisasiId   String?   @db.VarChar(36)
+  asnId              String?   @db.VarChar(36)
+  roleId             BigInt
+
+  isActive           Boolean   @default(true)          @map("is_active")
+  emailVerifiedAt    DateTime?                          @map("email_verified_at")
+  mustChangePassword Boolean   @default(false)          @map("must_change_password")
+  loginAttempts      Int       @default(0)              @map("login_attempts")
+  lockedAt           DateTime?                          @map("locked_at")
+  lastLogin          DateTime?                          @map("last_login")
+  passwordChangedAt  DateTime?                          @map("password_changed_at")
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?                          @map("deleted_at")
+
+  unitOrganisasi RefUnitOrganisasi? @relation(fields: [unitOrganisasiId], references: [id], onDelete: SetNull)
+  asn            Asn?               @relation(fields: [asnId], references: [id], onDelete: SetNull)
+  role           Role               @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  notifikasi        Notifikasi[]
+  refreshTokens     RefreshToken[]
+  passwordHistories UserPasswordHistory[]
+
+  // Named relations — satu user bisa muncul di banyak konteks operasional
+  usulanDiajukan    UsulanLayanan[]      @relation("UsulanDiajukanOleh")
+  dokumenUpload     UsulanDokumen[]      @relation("DokumenUploadOleh")
+  workflowActions   UsulanWorkflowLog[]  @relation("WorkflowDilakukanOleh")
+  dokumenTte        UsulanDokumenOutput[] @relation("DokumenTteOleh")
+  peremajaanDiajukan AsnPeremajaan[]    @relation("PeremajaanDiajukanOleh")
+  peremajaanDisetujui AsnPeremajaan[]   @relation("PeremajaanDisetujuiOleh")
+  revisiDikembalikan UsulanRevisi[]     @relation("RevisiDikembalikanOleh")
+  revisiResubmit    UsulanRevisi[]      @relation("RevisiResubmitOleh")
+  arsipOleh         ArsipUsulan[]       @relation("ArsipDiarsipkanOleh")
+  importSiasn       SiasnImportLog[]    @relation("ImportDilakukanOleh")
+
+  @@map("user")
+  @@index([username])
+  @@index([email])
+  @@index([unitOrganisasiId])
+  @@index([roleId])
+  @@index([isActive])
+  @@index([deletedAt])
+}
+
+model RefreshToken {
+  id          BigInt    @id @default(autoincrement())
+  userId      String    @db.VarChar(36)
+  token       String    @unique @db.VarChar(500)
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  ipAddress   String?   @db.VarChar(50) @map("ip_address")
+  userAgent   String?   @db.Text        @map("user_agent")
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_token")
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// Mencegah reuse password lama (enterprise password policy)
+model UserPasswordHistory {
+  id           BigInt   @id @default(autoincrement())
+  userId       String   @db.VarChar(36)
+  passwordHash String   @db.VarChar(255) @map("password_hash")
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_password_history")
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model RolePermission {
+  id         BigInt   @id @default(autoincrement())
+  roleId     BigInt
+  module     String?  @db.VarChar(100)
+  permission String   @db.VarChar(100)
+  createdAt  DateTime @default(now())
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module, permission], name: "uk_role_module_permission")
+  @@map("role_permission")
+  @@index([roleId])
+}
+
+// =====================================================
+// 5. NOTIFIKASI & LAPORAN
+// =====================================================
+
+model Notifikasi {
+  id        BigInt    @id @default(autoincrement())
+  userId    String    @db.VarChar(36)
+  type      String    @db.VarChar(50)
+  judul     String?   @db.VarChar(255)
+  isi       String?   @db.Text
+  link      String?   @db.VarChar(500)
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime?                 @map("read_at")
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifikasi")
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  // composite untuk query "notifikasi belum baca per user"
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+model LaporanHarian {
+  id                 BigInt    @id @default(autoincrement())
+  tanggalLaporan     DateTime  @unique
+  usulanMasuk        Int       @default(0)
+  usulanSelesai      Int       @default(0)
+  usulanDikembalikan Int       @default(0)
+  melampauiSla       Int       @default(0)
+  rataRataProsesHari Decimal?  @db.Decimal(5, 2)
+  dataJson           Json?
+  generatedAt        DateTime?
+  sentAt             DateTime? @map("sent_at")
+  createdAt          DateTime  @default(now())
+
+  breakdown LaporanDailyBreakdown[]
+
+  @@map("laporan_harian")
+  @@index([tanggalLaporan])
+}
+
+model LaporanBulanan {
+  id                  BigInt    @id @default(autoincrement())
+  tahun               Int
+  bulan               Int
+  totalLayananSelesai Int       @default(0)
+  capaiSlaPercent     Decimal?  @db.Decimal(5, 2)
+  melampauiSlaCount   Int       @default(0)
+  dataJson            Json?
+  generatedAt         DateTime?
+  sentAt              DateTime? @map("sent_at")
+  createdAt           DateTime  @default(now())
+
+  @@unique([tahun, bulan], name: "uk_tahun_bulan")
+  @@map("laporan_bulanan")
+  @@index([tahun, bulan])
+}
+
+// =====================================================
+// 6. KONFIGURASI SISTEM
+// =====================================================
+
+model ConfigSla {
+  id             BigInt   @id @default(autoincrement())
+  jenisLayananId BigInt?
+  jabatan        String?  @db.VarChar(50)
+  slaHari        Int
+  slaJam         Int      @default(0)  @map("sla_jam")
+  eskalasiHari   Int?                  @map("eskalasi_hari")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  jenisLayanan RefJenisLayanan? @relation(fields: [jenisLayananId], references: [id], onDelete: Cascade)
+
+  @@unique([jenisLayananId, jabatan], name: "uk_layanan_jabatan")
+  @@map("config_sla")
+  @@index([jenisLayananId])
+}
+
+model ConfigNotifikasi {
+  id              BigInt             @id @default(autoincrement())
+  eventType       String?            @db.VarChar(100) @map("event_type")
+  channel         ChannelNotifikasi?
+  penerimaRole    String?            @db.VarChar(50)  @map("penerima_role")
+  templateMessage String?            @db.Text         @map("template_message")
+  isActive        Boolean            @default(true)   @map("is_active")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  templates NotifikasiTemplate[]
+
+  @@map("config_notifikasi")
+  @@index([eventType])
+  @@index([channel])
+  @@index([penerimaRole])
+  @@index([isActive])
+}
+
+model ConfigLaporanOtomatis {
+  id               BigInt         @id @default(autoincrement())
+  jenisLaporan     JenisLaporan?  @map("jenis_laporan")
+  jadwalPengiriman String?        @db.VarChar(100) @map("jadwal_pengiriman")
+  formatLaporan    FormatLaporan? @map("format_laporan")
+  penerimaRole     String?        @db.VarChar(50)  @map("penerima_role")
+  isActive         Boolean        @default(true)   @map("is_active")
+  lastSent         DateTime?                       @map("last_sent")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("config_laporan_otomatis")
+  @@index([jenisLaporan])
+  @@index([penerimaRole])
+  @@index([isActive])
+}
+
+// userId sengaja plain string — audit log harus tetap ada meski user dihapus
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     String?  @db.VarChar(36)
+  userNama   String?  @db.VarChar(255) @map("user_nama")
+  action     String?  @db.VarChar(100)
+  entityType String?  @db.VarChar(100) @map("entity_type")
+  entityId   String?  @db.VarChar(36)  @map("entity_id")
+  oldValues  Json?                     @map("old_values")
+  newValues  Json?                     @map("new_values")
+  ipAddress  String?  @db.VarChar(50)  @map("ip_address")
+  userAgent  String?  @db.Text         @map("user_agent")
+  createdAt  DateTime @default(now())
+
+  @@map("audit_log")
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// =====================================================
+// 7. INTEGRASI DATA SIASN
+// =====================================================
+
+model SiasnImportLog {
+  id              BigInt       @id @default(autoincrement())
+  filename        String       @db.VarChar(255)
+  jenisData       String       @db.VarChar(100)
+  totalBaris      Int
+  successBaris    Int          @default(0)    @map("success_baris")
+  failedBaris     Int          @default(0)    @map("failed_baris")
+  errorDetails    Json?                       @map("error_details")
+  importedOlehId  String?      @db.VarChar(36) @map("imported_oleh_id")
+  status          StatusImport @default(Pending)
+  startedAt       DateTime?                   @map("started_at")
+  completedAt     DateTime?                   @map("completed_at")
+  createdAt       DateTime     @default(now())
+
+  errors        SiasnImportError[]
+  dilakukanOleh User?            @relation("ImportDilakukanOleh", fields: [importedOlehId], references: [id], onDelete: SetNull)
+
+  @@map("siasn_import_log")
+  @@index([jenisData])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SiasnImportError {
+  id           BigInt   @id @default(autoincrement())
+  importLogId  BigInt   @map("import_log_id")
+  nomorBaris   Int      @map("nomor_baris")
+  nomorId      String?  @db.VarChar(100) @map("nomor_id")
+  dataAsli     Json                      @map("data_asli")
+  errorMessage String   @db.Text        @map("error_message")
+  createdAt    DateTime @default(now())
+
+  importLog SiasnImportLog @relation(fields: [importLogId], references: [id], onDelete: Cascade)
+
+  @@map("siasn_import_error")
+  @@index([importLogId])
+}
+
+// =====================================================
+// 8. SLA TRACKER & REVISI
+// =====================================================
+
+model SlaTracker {
+  id           BigInt      @id @default(autoincrement())
+  usulanId     String      @db.VarChar(36)
+  tahapSaat    TahapUsulan @map("tahap_saat")
+  masukTahap   DateTime    @map("masuk_tahap")
+  slaHari      Int         @map("sla_hari")
+  slaJam       Int         @default(0) @map("sla_jam")
+  slaHabisAt   DateTime    @map("sla_habis_at")
+  statusSla    StatusSla   @default(OK) @map("status_sla")
+  eskalasi     Boolean     @default(false)
+  eskalasiBuat DateTime?   @map("eskalasi_buat")
+  selesaiAt    DateTime?   @map("selesai_at")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  usulanLayanan UsulanLayanan @relation(fields: [usulanId], references: [id], onDelete: Cascade)
+
+  @@map("sla_tracker")
+  @@index([usulanId])
+  @@index([statusSla])
+  @@index([slaHabisAt])
+  @@index([tahapSaat, statusSla])
+  @@index([selesaiAt, statusSla, slaHabisAt])
+}
+
+model UsulanRevisi {
+  id                  BigInt       @id @default(autoincrement())
+  usulanId            String       @db.VarChar(36)
+  nomorRevisi         Int          @map("nomor_revisi")
+  dariTahap           TahapUsulan  @map("dari_tahap")
+  keTahap             TahapUsulan? @map("ke_tahap")
+  alasanDikembalikan  String       @db.Text        @map("alasan_dikembalikan")
+  dikembalikanOlehId  String       @db.VarChar(36) @map("dikembalikan_oleh_id")
+  tglDikembalikan     DateTime     @default(now()) @map("tgl_dikembalikan")
+  statusRevisi        StatusRevisi @default(Menunggu) @map("status_revisi")
+  catatanPerbaikan    String?      @db.Text        @map("catatan_perbaikan")
+  tglResubmit         DateTime?                   @map("tgl_resubmit")
+  resubmitOlehId      String?      @db.VarChar(36) @map("resubmit_oleh_id")
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  usulanLayanan      UsulanLayanan @relation(fields: [usulanId], references: [id], onDelete: Cascade)
+  dikembalikanOleh   User          @relation("RevisiDikembalikanOleh", fields: [dikembalikanOlehId], references: [id], onDelete: Restrict)
+  resubmitOleh       User?         @relation("RevisiResubmitOleh", fields: [resubmitOlehId], references: [id], onDelete: SetNull)
+
+  @@unique([usulanId, nomorRevisi], name: "uk_usulan_nomor_revisi")
+  @@map("usulan_revisi")
+  @@index([usulanId])
+  @@index([statusRevisi])
+  @@index([dikembalikanOlehId])
+}
+
+// =====================================================
+// 9. PEREMAJAAN DATA ASN
+// =====================================================
+
+model AsnPeremajaan {
+  id               BigInt         @id @default(autoincrement())
+  asnId            String         @db.VarChar(36)
+  jenisPerubahan   String         @db.VarChar(100)  @map("jenis_perubahan")
+  dataLama         Json?                             @map("data_lama")
+  dataBaru         Json?                             @map("data_baru")
+  dokumenBukti     String?        @db.VarChar(500)   @map("dokumen_bukti")
+  statusApproval   StatusApproval @default(Pending)  @map("status_approval")
+  diajukanOlehId   String         @db.VarChar(36)   @map("diajukan_oleh_id")
+  disetujuiOlehId  String?        @db.VarChar(36)   @map("disetujui_oleh_id")
+  catatan          String?        @db.Text
+  approvedAt       DateTime?                         @map("approved_at")
+  rejectedAt       DateTime?                         @map("rejected_at")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  asn             Asn   @relation(fields: [asnId], references: [id], onDelete: Cascade)
+  diajukanOleh    User  @relation("PeremajaanDiajukanOleh", fields: [diajukanOlehId], references: [id], onDelete: Restrict)
+  disetujuiOleh   User? @relation("PeremajaanDisetujuiOleh", fields: [disetujuiOlehId], references: [id], onDelete: SetNull)
+
+  @@map("asn_peremajaan")
+  @@index([asnId])
+  @@index([jenisPerubahan])
+  @@index([statusApproval])
+  @@index([diajukanOlehId])
+}
+
+// =====================================================
+// 10. TEMPLATE DOKUMEN (SK, Surat, Nota Dinas)
+// =====================================================
+
+model TemplateDokumen {
+  id             BigInt    @id @default(autoincrement())
+  jenisLayananId BigInt?   @map("jenis_layanan_id")
+  kode           String    @unique @db.VarChar(50)
+  nama           String    @db.VarChar(255)
+  deskripsi      String?   @db.Text
+  konten         String    @db.LongText
+  // daftar variabel yang bisa dipakai, misal ["nama_asn","nip","golongan"]
+  variabel       Json?
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime? @map("deleted_at")
+
+  jenisLayanan  RefJenisLayanan?      @relation(fields: [jenisLayananId], references: [id], onDelete: SetNull)
+  dokumenOutput UsulanDokumenOutput[]
+
+  @@map("template_dokumen")
+  @@index([jenisLayananId])
+  @@index([isActive])
+  @@index([deletedAt])
+}
+
+// =====================================================
+// 11. PERENCANAAN PENSIUN & BUP TRACKING
+// =====================================================
+
+model PerencanaanPensiun {
+  id            BigInt   @id @default(autoincrement())
+  asnId         String   @unique @db.VarChar(36) @map("asn_id")
+  tanggalBup    DateTime @map("tanggal_bup")
+  tahunBup      Int      @map("tahun_bup")
+  bupUsia       Int      @map("bup_usia")
+  keterangan    String?  @db.Text
+  sudahDiproses Boolean  @default(false) @map("sudah_diproses")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  asn Asn @relation(fields: [asnId], references: [id], onDelete: Cascade)
+
+  @@map("perencanaan_pensiun")
+  @@index([tanggalBup])
+  @@index([tahunBup])
+  @@index([sudahDiproses])
+}
+
+// =====================================================
+// 12. ARSIP USULAN (> 1 tahun)
+// =====================================================
+
+model ArsipUsulan {
+  id              BigInt   @id @default(autoincrement())
+  usulanLayananId String   @db.VarChar(36) @map("usulan_layanan_id")
+  alasanArsip     String?  @db.Text        @map("alasan_arsip")
+  diarsipkanOlehId String? @db.VarChar(36) @map("diarsipkan_oleh_id")
+  // snapshot data usulan saat diarsipkan — audit trail permanen
+  dataSnapshot    Json?                    @map("data_snapshot")
+  createdAt       DateTime @default(now())
+
+  usulanLayanan UsulanLayanan @relation(fields: [usulanLayananId], references: [id], onDelete: Restrict)
+  diarsipkanOleh User?        @relation("ArsipDiarsipkanOleh", fields: [diarsipkanOlehId], references: [id], onDelete: SetNull)
+
+  @@map("arsip_usulan")
+  @@index([usulanLayananId])
+  @@index([createdAt])
+}
+
+// =====================================================
+// 13. NOTIFIKASI TEMPLATE & LAPORAN BREAKDOWN
+// =====================================================
+
+model NotifikasiTemplate {
+  id               BigInt            @id @default(autoincrement())
+  configId         BigInt            @map("config_id")
+  eventType        String            @db.VarChar(100) @map("event_type")
+  subject          String?           @db.VarChar(255)
+  body             String            @db.Text
+  // comma-separated jika multi-channel: "Email,WhatsApp"
+  channels         String            @db.VarChar(200)
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  configNotifikasi ConfigNotifikasi @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@map("notifikasi_template")
+  @@index([configId])
+  @@index([eventType])
+  @@index([isActive])
+}
+
+model LaporanDailyBreakdown {
+  id                 BigInt   @id @default(autoincrement())
+  laporanHarianId    BigInt   @map("laporan_harian_id")
+  dimensi            String   @db.VarChar(50)
+  dimensiValue       String   @db.VarChar(255) @map("dimensi_value")
+  usulanMasuk        Int      @default(0)      @map("usulan_masuk")
+  usulanSelesai      Int      @default(0)      @map("usulan_selesai")
+  usulanDikembalikan Int      @default(0)      @map("usulan_dikembalikan")
+  melampauiSla       Int      @default(0)      @map("melampaui_sla")
+  rataRataHari       Decimal? @db.Decimal(5, 2) @map("rata_rata_hari")
+  dataJson           Json?                      @map("data_json")
+  createdAt          DateTime @default(now())
+
+  laporanHarian LaporanHarian @relation(fields: [laporanHarianId], references: [id], onDelete: Cascade)
+
+  @@map("laporan_daily_breakdown")
+  @@index([laporanHarianId])
+  @@index([dimensi])
+  @@index([dimensi, dimensiValue])
+}

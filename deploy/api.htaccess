@@ -1,0 +1,20 @@
+RewriteEngine On
+
+# Optional API app .htaccess for cPanel/Passenger style Node.js app folders.
+# If using the root public_html reverse proxy, this file is usually not needed.
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:%{ENV:PORT}/$1 [P,L,QSA]
+
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+<FilesMatch "^(\.env|\.env\..*|package-lock\.json|package\.json|tsconfig\.json|ecosystem\.config\.js)$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(log|prisma|ts|map|sql|gz)$">
+  Require all denied
+</FilesMatch>

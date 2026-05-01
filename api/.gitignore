@@ -1,0 +1,11 @@
+node_modules/
+dist/
+logs/
+uploads/
+backups/
+*.log
+.env
+.env.local
+.env.production
+prisma/dev.db
+*.tsbuildinfo
