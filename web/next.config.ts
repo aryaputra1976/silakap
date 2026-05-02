@@ -54,6 +54,9 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
   images: {
     formats: ['image/avif', 'image/webp'],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'none'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: parsedApi.protocol,

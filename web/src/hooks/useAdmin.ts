@@ -10,6 +10,10 @@ import type {
   JenisLayananFull,
   PaginatedResponse,
   RefGolonganFull,
+  RefJabatanFungsional,
+  RefJabatanPelaksana,
+  RefJabatanStruktural,
+  RefJenisJabatan,
   Role,
   RoleWithPermissions,
   SiasnImportLog,
@@ -159,6 +163,44 @@ export const useRefJenisLayananAdmin = () =>
     },
   });
 
+export const useRefJenisJabatan = () =>
+  useQuery({
+    queryKey: ["admin", "ref", "jenis-jabatan"],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<RefJenisJabatan[]>>("/referensi/jenis-jabatan");
+      return data.data;
+    },
+  });
+
+export const useRefJabatanStruktural = (unitOrganisasiId?: string) =>
+  useQuery({
+    queryKey: ["admin", "ref", "jabatan-struktural", unitOrganisasiId],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<RefJabatanStruktural[]>>("/referensi/jabatan/struktural", {
+        params: unitOrganisasiId ? { unitOrganisasiId } : undefined,
+      });
+      return data.data;
+    },
+  });
+
+export const useRefJabatanFungsional = () =>
+  useQuery({
+    queryKey: ["admin", "ref", "jabatan-fungsional"],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<RefJabatanFungsional[]>>("/referensi/jabatan/fungsional");
+      return data.data;
+    },
+  });
+
+export const useRefJabatanPelaksana = () =>
+  useQuery({
+    queryKey: ["admin", "ref", "jabatan-pelaksana"],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<RefJabatanPelaksana[]>>("/referensi/jabatan/pelaksana");
+      return data.data;
+    },
+  });
+
 export const useRefActions = () => {
   const qc = useQueryClient();
   return {
@@ -224,7 +266,7 @@ export const useRefActions = () => {
       mutationFn: (file: File) => {
         const form = new FormData();
         form.append("file", file);
-        return api.post<ApiResponse<ImportUnitResult>>(
+        return api.post<ApiResponse<ImportBulkResult>>(
           "/referensi/unit-organisasi/import",
           form,
           { timeout: 120_000 },
@@ -233,10 +275,70 @@ export const useRefActions = () => {
       onSuccess: () =>
         void qc.invalidateQueries({ queryKey: ["admin", "ref", "unit"] }),
     }),
+    createJenisJabatan: useMutation({
+      mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jenis-jabatan", body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jenis-jabatan"] }),
+    }),
+    updateJenisJabatan: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+        api.put(`/referensi/jenis-jabatan/${id}`, body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jenis-jabatan"] }),
+    }),
+    createJabatanStruktural: useMutation({
+      mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jabatan/struktural", body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-struktural"] }),
+    }),
+    updateJabatanStruktural: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+        api.put(`/referensi/jabatan/struktural/${id}`, body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-struktural"] }),
+    }),
+    createJabatanFungsional: useMutation({
+      mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jabatan/fungsional", body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-fungsional"] }),
+    }),
+    updateJabatanFungsional: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+        api.put(`/referensi/jabatan/fungsional/${id}`, body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-fungsional"] }),
+    }),
+    createJabatanPelaksana: useMutation({
+      mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jabatan/pelaksana", body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-pelaksana"] }),
+    }),
+    updateJabatanPelaksana: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+        api.put(`/referensi/jabatan/pelaksana/${id}`, body),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-pelaksana"] }),
+    }),
+    importJabatanStruktural: useMutation({
+      mutationFn: (file: File) => {
+        const form = new FormData();
+        form.append("file", file);
+        return api.post<ApiResponse<ImportBulkResult>>("/referensi/jabatan/struktural/import", form, { timeout: 120_000 });
+      },
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-struktural"] }),
+    }),
+    importJabatanFungsional: useMutation({
+      mutationFn: (file: File) => {
+        const form = new FormData();
+        form.append("file", file);
+        return api.post<ApiResponse<ImportBulkResult>>("/referensi/jabatan/fungsional/import", form, { timeout: 120_000 });
+      },
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-fungsional"] }),
+    }),
+    importJabatanPelaksana: useMutation({
+      mutationFn: (file: File) => {
+        const form = new FormData();
+        form.append("file", file);
+        return api.post<ApiResponse<ImportBulkResult>>("/referensi/jabatan/pelaksana/import", form, { timeout: 120_000 });
+      },
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-pelaksana"] }),
+    }),
   };
 };
 
-interface ImportUnitResult {
+interface ImportBulkResult {
   total: number;
   berhasil: number;
   diperbarui: number;
@@ -443,7 +545,7 @@ export const useImportAsn = () => {
       const formData = new FormData();
       formData.append("file", file);
       return api.post<ApiResponse<SiasnImportLog>>("/integrasi/import/asn", formData, {
-        timeout: 120_000,
+        timeout: 600_000,
       });
     },
     onSuccess: () => {
@@ -451,6 +553,24 @@ export const useImportAsn = () => {
     },
   });
 };
+
+interface DiagnosaAsnResult {
+  totalBaris: number;
+  kolom: Array<{ asli: string; normalized: string }>;
+  contohParsed: Array<Record<string, string | null>>;
+  deteksi: { nip: string; nama: string };
+}
+
+export const useDiagnosaAsn = () =>
+  useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return api.post<ApiResponse<DiagnosaAsnResult>>("/integrasi/diagnosa/asn", formData, {
+        timeout: 60_000,
+      });
+    },
+  });
 
 export const downloadImportErrors = async (id: string) => {
   const response = await api.get(`/integrasi/log/${id}/errors`, {

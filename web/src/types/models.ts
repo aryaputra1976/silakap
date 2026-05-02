@@ -387,6 +387,42 @@ export interface JenisLayananFull {
   }[];
 }
 
+export interface RefJenisJabatan {
+  id: string;
+  nama: string;
+  keterangan: string | null;
+}
+
+export interface RefJabatanStruktural {
+  id: string;
+  nama: string;
+  unitOrganisasiId: string;
+  unitOrganisasi?: { id: string; nama: string };
+  eselonId: number | null;
+  bup: number;
+  kode: string | null;
+  idSiasn: string | null;
+  isActive: boolean;
+}
+
+export interface RefJabatanFungsional {
+  id: string;
+  kode: string | null;
+  nama: string;
+  jenjang: string | null;
+  bup: number;
+  idSiasn: string | null;
+  isActive: boolean;
+}
+
+export interface RefJabatanPelaksana {
+  id: string;
+  kode: string | null;
+  nama: string;
+  idSiasn: string | null;
+  isActive: boolean;
+}
+
 export interface ConfigSla {
   id: string;
   jenisLayananId: string | null;
@@ -427,9 +463,11 @@ export interface SiasnImportLog {
   id: string;
   jenisData: string;
   status: string;
+  totalBaris?: number;
   successBaris: number;
   failedBaris: number;
   createdAt: string;
+  completedAt?: string | null;
 }
 
 export interface AsnPeremajaan {

@@ -4,6 +4,33 @@ import { AppError } from '@/core/errors/app-error'
 import { authService } from './auth.service'
 
 export const authController = {
+  register: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await authService.register(req.body, req.ip, req.headers['user-agent'])
+      sendSuccess(res, result, 'Registrasi berhasil. Akun menunggu verifikasi admin BKPSDM.')
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  asnByNip: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await authService.asnByNip(req.params.nip)
+      sendSuccess(res, result)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  unitOrganisasi: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await authService.unitOrganisasi()
+      sendSuccess(res, result)
+    } catch (error) {
+      next(error)
+    }
+  },
+
   login: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await authService.login(

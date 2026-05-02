@@ -9,10 +9,18 @@ import { validate } from '@/core/middleware/validate.middleware'
 import { ROLES } from '@/shared/constants'
 import {
   createGolonganSchema,
+  createJabatanFungsionalSchema,
+  createJabatanPelaksanaSchema,
+  createJabatanStrukturalSchema,
+  createJenisJabatanSchema,
   createJenisLayananSchema,
   createUnitOrganisasiSchema,
   replacePersyaratanSchema,
   updateGolonganSchema,
+  updateJabatanFungsionalSchema,
+  updateJabatanPelaksanaSchema,
+  updateJabatanStrukturalSchema,
+  updateJenisJabatanSchema,
   updateJenisLayananSchema,
   updateUnitOrganisasiSchema,
 } from './dto/referensi.dto'
@@ -237,9 +245,220 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
   }
 })
 
+referensiRoutes.get('/jenis-jabatan', referensiController.jenisJabatan)
+referensiRoutes.post('/jenis-jabatan', adminOnly, validate(createJenisJabatanSchema), referensiController.createJenisJabatan)
+referensiRoutes.put('/jenis-jabatan/:id', adminOnly, validate(updateJenisJabatanSchema), referensiController.updateJenisJabatan)
+
 referensiRoutes.get('/jabatan/struktural', referensiController.jabatanStruktural)
+referensiRoutes.post('/jabatan/struktural', adminOnly, validate(createJabatanStrukturalSchema), referensiController.createJabatanStruktural)
+referensiRoutes.put('/jabatan/struktural/:id', adminOnly, validate(updateJabatanStrukturalSchema), referensiController.updateJabatanStruktural)
+
+// Import Jabatan Struktural dari Excel SIASN.
+// Header: ID/ID_JABATAN, NAMA/NAMA_JABATAN, ID_UNOR/UNOR_ID, ESELON/ESELON_ID, BUP, KODE, ID_SIASN.
+// Update hanya mengubah nama/unit/eselon/bup — kode dan id_siasn tidak diubah agar tidak melanggar UNIQUE constraint.
+referensiRoutes.post('/jabatan/struktural/import', adminOnly, upload.single('file'), async (req, res, next) => {
+  const file = req.file
+  if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
+  try {
+    const wb = XLSX.readFile(file.path)
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false })
+
+    const toStr = (v: unknown): string => v == null ? '' : String(v)
+    const normKey = (k: string): string => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+    const pick = (row: Record<string, unknown>, ...keys: string[]): string => {
+      const map = new Map(Object.entries(row).map(([k, v]) => [normKey(k), v]))
+      for (const k of keys) { const v = toStr(map.get(normKey(k))).trim(); if (v) return v }
+      return ''
+    }
+
+    type StrukturalRow = { baris: number; id: string; nama: string; unitOrganisasiId: string; eselonId: number | null; bup: number; kode: string | null; idSiasn: string | null }
+    const parsed: StrukturalRow[] = []
+    const errors: Array<{ baris: number; pesan: string }> = []
+    const seenIds = new Set<string>()
+
+    for (const [i, row] of rows.entries()) {
+      const baris = i + 2
+      const id = pick(row, 'ID', 'ID_JABATAN', 'JABATAN_ID', 'KODE_JABATAN', 'ID_JABATAN_STRUKTURAL')
+      const nama = pick(row, 'NAMA', 'NAMA_JABATAN', 'NAMA_JABATAN_STRUKTURAL')
+      const unitOrganisasiId = pick(row, 'ID_UNOR', 'UNOR_ID', 'UNIT_ORGANISASI_ID', 'UNITORGID', 'KODE_UNOR', 'ID_UNIT_ORGANISASI', 'UNOR')
+      const eselonRaw = pick(row, 'ESELON', 'ESELON_ID', 'ID_ESELON', 'TINGKAT_ESELON')
+      const bupRaw = pick(row, 'BUP', 'BATAS_USIA_PENSIUN')
+      const kode = pick(row, 'KODE', 'KODE_JABATAN') || null
+      const idSiasn = pick(row, 'ID_SIASN', 'IDSIASN') || null
+
+      if (!id) { errors.push({ baris, pesan: 'Kolom ID wajib diisi' }); continue }
+      if (!nama) { errors.push({ baris, pesan: 'Kolom NAMA wajib diisi' }); continue }
+      if (!unitOrganisasiId) { errors.push({ baris, pesan: 'Kolom ID_UNOR (Unit Organisasi) wajib diisi' }); continue }
+      if (seenIds.has(id)) { errors.push({ baris, pesan: `ID '${id}' duplikat di file` }); continue }
+      seenIds.add(id)
+
+      const eselonId = eselonRaw && Number.isInteger(Number(eselonRaw)) ? Number(eselonRaw) : null
+      const bup = bupRaw && Number.isInteger(Number(bupRaw)) ? Number(bupRaw) : 58
+      parsed.push({ baris, id, nama, unitOrganisasiId, eselonId, bup, kode, idSiasn })
+    }
+
+    const allUnorIds = [...new Set(parsed.map(r => r.unitOrganisasiId))]
+    const existingUnorIds = allUnorIds.length > 0
+      ? new Set((await db.refUnitOrganisasi.findMany({ where: { id: { in: allUnorIds } }, select: { id: true } })).map(r => r.id))
+      : new Set<string>()
+
+    const validRows = parsed.filter(row => {
+      if (!existingUnorIds.has(row.unitOrganisasiId)) {
+        errors.push({ baris: row.baris, pesan: `Unit Organisasi '${row.unitOrganisasiId}' tidak ditemukan di database` })
+        return false
+      }
+      return true
+    })
+
+    const existingIds = validRows.length > 0
+      ? new Set((await db.refJabatanStruktural.findMany({ where: { id: { in: validRows.map(r => r.id) } }, select: { id: true } })).map(r => r.id))
+      : new Set<string>()
+
+    let berhasil = 0
+    let diperbarui = 0
+    const upsertOps = validRows.map(row => {
+      if (existingIds.has(row.id)) {
+        diperbarui++
+        return db.refJabatanStruktural.update({
+          where: { id: row.id },
+          data: { nama: row.nama, unitOrganisasiId: row.unitOrganisasiId, eselonId: row.eselonId, bup: row.bup },
+        })
+      }
+      berhasil++
+      return db.refJabatanStruktural.create({
+        data: { id: row.id, nama: row.nama, unitOrganisasiId: row.unitOrganisasiId, eselonId: row.eselonId, bup: row.bup, kode: row.kode, idSiasn: row.idSiasn },
+      })
+    })
+
+    for (const ops of chunk(upsertOps, 100)) { await db.$transaction(ops) }
+    sendSuccess(res, { total: parsed.length, berhasil, diperbarui, errors }, `Import selesai: ${berhasil} ditambahkan, ${diperbarui} diperbarui, ${errors.length} error`)
+  } catch (err) { next(err) }
+})
+
 referensiRoutes.get('/jabatan/fungsional', referensiController.jabatanFungsional)
+referensiRoutes.post('/jabatan/fungsional', adminOnly, validate(createJabatanFungsionalSchema), referensiController.createJabatanFungsional)
+referensiRoutes.put('/jabatan/fungsional/:id', adminOnly, validate(updateJabatanFungsionalSchema), referensiController.updateJabatanFungsional)
+
+// Import Jabatan Fungsional dari Excel SIASN.
+// Header: ID/ID_JABATAN, KODE/KODE_JABATAN, NAMA/NAMA_JABATAN, JENJANG, BUP, ID_SIASN.
+referensiRoutes.post('/jabatan/fungsional/import', adminOnly, upload.single('file'), async (req, res, next) => {
+  const file = req.file
+  if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
+  try {
+    const wb = XLSX.readFile(file.path)
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false })
+
+    const toStr = (v: unknown): string => v == null ? '' : String(v)
+    const normKey = (k: string): string => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+    const pick = (row: Record<string, unknown>, ...keys: string[]): string => {
+      const map = new Map(Object.entries(row).map(([k, v]) => [normKey(k), v]))
+      for (const k of keys) { const v = toStr(map.get(normKey(k))).trim(); if (v) return v }
+      return ''
+    }
+
+    type FungsionalRow = { baris: number; id: string; kode: string | null; nama: string; jenjang: string | null; bup: number; idSiasn: string | null }
+    const parsed: FungsionalRow[] = []
+    const errors: Array<{ baris: number; pesan: string }> = []
+    const seenIds = new Set<string>()
+
+    for (const [i, row] of rows.entries()) {
+      const baris = i + 2
+      const id = pick(row, 'ID', 'ID_JABATAN', 'JABATAN_ID', 'KODE_JABATAN', 'ID_JABATAN_FUNGSIONAL')
+      const kode = pick(row, 'KODE', 'KODE_JABATAN') || null
+      const nama = pick(row, 'NAMA', 'NAMA_JABATAN', 'NAMA_JABATAN_FUNGSIONAL')
+      const jenjang = pick(row, 'JENJANG', 'JENJANG_JABATAN', 'TINGKAT_JENJANG', 'TINGKAT') || null
+      const bupRaw = pick(row, 'BUP', 'BATAS_USIA_PENSIUN')
+      const idSiasn = pick(row, 'ID_SIASN', 'IDSIASN') || null
+
+      if (!id) { errors.push({ baris, pesan: 'Kolom ID wajib diisi' }); continue }
+      if (!nama) { errors.push({ baris, pesan: 'Kolom NAMA wajib diisi' }); continue }
+      if (seenIds.has(id)) { errors.push({ baris, pesan: `ID '${id}' duplikat di file` }); continue }
+      seenIds.add(id)
+
+      const bup = bupRaw && Number.isInteger(Number(bupRaw)) ? Number(bupRaw) : 65
+      parsed.push({ baris, id, kode, nama, jenjang, bup, idSiasn })
+    }
+
+    const existingIds = parsed.length > 0
+      ? new Set((await db.refJabatanFungsional.findMany({ where: { id: { in: parsed.map(r => r.id) } }, select: { id: true } })).map(r => r.id))
+      : new Set<string>()
+
+    let berhasil = 0
+    let diperbarui = 0
+    const upsertOps = parsed.map(row => {
+      if (existingIds.has(row.id)) {
+        diperbarui++
+        return db.refJabatanFungsional.update({ where: { id: row.id }, data: { nama: row.nama, jenjang: row.jenjang, bup: row.bup } })
+      }
+      berhasil++
+      return db.refJabatanFungsional.create({ data: { id: row.id, kode: row.kode, nama: row.nama, jenjang: row.jenjang, bup: row.bup, idSiasn: row.idSiasn } })
+    })
+
+    for (const ops of chunk(upsertOps, 100)) { await db.$transaction(ops) }
+    sendSuccess(res, { total: parsed.length, berhasil, diperbarui, errors }, `Import selesai: ${berhasil} ditambahkan, ${diperbarui} diperbarui, ${errors.length} error`)
+  } catch (err) { next(err) }
+})
+
 referensiRoutes.get('/jabatan/pelaksana', referensiController.jabatanPelaksana)
+referensiRoutes.post('/jabatan/pelaksana', adminOnly, validate(createJabatanPelaksanaSchema), referensiController.createJabatanPelaksana)
+referensiRoutes.put('/jabatan/pelaksana/:id', adminOnly, validate(updateJabatanPelaksanaSchema), referensiController.updateJabatanPelaksana)
+
+// Import Jabatan Pelaksana dari Excel SIASN.
+// Header: ID/ID_JABATAN, KODE/KODE_JABATAN, NAMA/NAMA_JABATAN, ID_SIASN.
+referensiRoutes.post('/jabatan/pelaksana/import', adminOnly, upload.single('file'), async (req, res, next) => {
+  const file = req.file
+  if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
+  try {
+    const wb = XLSX.readFile(file.path)
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false })
+
+    const toStr = (v: unknown): string => v == null ? '' : String(v)
+    const normKey = (k: string): string => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+    const pick = (row: Record<string, unknown>, ...keys: string[]): string => {
+      const map = new Map(Object.entries(row).map(([k, v]) => [normKey(k), v]))
+      for (const k of keys) { const v = toStr(map.get(normKey(k))).trim(); if (v) return v }
+      return ''
+    }
+
+    type PelaksanaRow = { baris: number; id: string; kode: string | null; nama: string; idSiasn: string | null }
+    const parsed: PelaksanaRow[] = []
+    const errors: Array<{ baris: number; pesan: string }> = []
+    const seenIds = new Set<string>()
+
+    for (const [i, row] of rows.entries()) {
+      const baris = i + 2
+      const id = pick(row, 'ID', 'ID_JABATAN', 'JABATAN_ID', 'KODE_JABATAN', 'ID_JABATAN_PELAKSANA')
+      const kode = pick(row, 'KODE', 'KODE_JABATAN') || null
+      const nama = pick(row, 'NAMA', 'NAMA_JABATAN', 'NAMA_JABATAN_PELAKSANA')
+      const idSiasn = pick(row, 'ID_SIASN', 'IDSIASN') || null
+
+      if (!id) { errors.push({ baris, pesan: 'Kolom ID wajib diisi' }); continue }
+      if (!nama) { errors.push({ baris, pesan: 'Kolom NAMA wajib diisi' }); continue }
+      if (seenIds.has(id)) { errors.push({ baris, pesan: `ID '${id}' duplikat di file` }); continue }
+      seenIds.add(id)
+
+      parsed.push({ baris, id, kode, nama, idSiasn })
+    }
+
+    const existingIds = parsed.length > 0
+      ? new Set((await db.refJabatanPelaksana.findMany({ where: { id: { in: parsed.map(r => r.id) } }, select: { id: true } })).map(r => r.id))
+      : new Set<string>()
+
+    let berhasil = 0
+    let diperbarui = 0
+    const upsertOps = parsed.map(row => {
+      if (existingIds.has(row.id)) {
+        diperbarui++
+        return db.refJabatanPelaksana.update({ where: { id: row.id }, data: { nama: row.nama } })
+      }
+      berhasil++
+      return db.refJabatanPelaksana.create({ data: { id: row.id, kode: row.kode, nama: row.nama, idSiasn: row.idSiasn } })
+    })
+
+    for (const ops of chunk(upsertOps, 100)) { await db.$transaction(ops) }
+    sendSuccess(res, { total: parsed.length, berhasil, diperbarui, errors }, `Import selesai: ${berhasil} ditambahkan, ${diperbarui} diperbarui, ${errors.length} error`)
+  } catch (err) { next(err) }
+})
 referensiRoutes.get('/pendidikan', referensiController.pendidikan)
 referensiRoutes.get('/bidang-pendidikan', referensiController.bidangPendidikan)
 

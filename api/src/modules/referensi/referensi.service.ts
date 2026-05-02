@@ -4,10 +4,18 @@ import { AppError } from '@/core/errors/app-error'
 import { buildMeta, getPaginationParams } from '@/core/http/pagination.helper'
 import type {
   CreateGolonganDto,
+  CreateJabatanFungsionalDto,
+  CreateJabatanPelaksanaDto,
+  CreateJabatanStrukturalDto,
+  CreateJenisJabatanDto,
   CreateJenisLayananDto,
   CreateUnitOrganisasiDto,
   ReplacePersyaratanDto,
   UpdateGolonganDto,
+  UpdateJabatanFungsionalDto,
+  UpdateJabatanPelaksanaDto,
+  UpdateJabatanStrukturalDto,
+  UpdateJenisJabatanDto,
   UpdateJenisLayananDto,
   UpdateUnitOrganisasiDto,
 } from './dto/referensi.dto'
@@ -96,19 +104,64 @@ export const referensiService = {
     return db.refUnitOrganisasi.update({ where: { id }, data: dto })
   },
 
+  jenisJabatan() {
+    return db.refJenisJabatan.findMany({ orderBy: { nama: 'asc' } })
+  },
+
+  createJenisJabatan(dto: CreateJenisJabatanDto) {
+    return db.refJenisJabatan.create({ data: dto })
+  },
+
+  async updateJenisJabatan(id: string, dto: UpdateJenisJabatanDto) {
+    const existing = await db.refJenisJabatan.findUnique({ where: { id: BigInt(id) } })
+    if (!existing) throw new AppError('Data tidak ditemukan', 404)
+    return db.refJenisJabatan.update({ where: { id: BigInt(id) }, data: dto })
+  },
+
   jabatanStruktural(unitOrganisasiId?: string) {
     return db.refJabatanStruktural.findMany({
       where: unitOrganisasiId ? { unitOrganisasiId } : undefined,
+      include: { unitOrganisasi: { select: { id: true, nama: true } } },
       orderBy: { nama: 'asc' },
     })
+  },
+
+  createJabatanStruktural(dto: CreateJabatanStrukturalDto) {
+    return db.refJabatanStruktural.create({ data: dto })
+  },
+
+  async updateJabatanStruktural(id: string, dto: UpdateJabatanStrukturalDto) {
+    const existing = await db.refJabatanStruktural.findUnique({ where: { id } })
+    if (!existing) throw new AppError('Data tidak ditemukan', 404)
+    return db.refJabatanStruktural.update({ where: { id }, data: dto })
   },
 
   jabatanFungsional() {
     return db.refJabatanFungsional.findMany({ orderBy: { nama: 'asc' } })
   },
 
+  createJabatanFungsional(dto: CreateJabatanFungsionalDto) {
+    return db.refJabatanFungsional.create({ data: dto })
+  },
+
+  async updateJabatanFungsional(id: string, dto: UpdateJabatanFungsionalDto) {
+    const existing = await db.refJabatanFungsional.findUnique({ where: { id } })
+    if (!existing) throw new AppError('Data tidak ditemukan', 404)
+    return db.refJabatanFungsional.update({ where: { id }, data: dto })
+  },
+
   jabatanPelaksana() {
     return db.refJabatanPelaksana.findMany({ orderBy: { nama: 'asc' } })
+  },
+
+  createJabatanPelaksana(dto: CreateJabatanPelaksanaDto) {
+    return db.refJabatanPelaksana.create({ data: dto })
+  },
+
+  async updateJabatanPelaksana(id: string, dto: UpdateJabatanPelaksanaDto) {
+    const existing = await db.refJabatanPelaksana.findUnique({ where: { id } })
+    if (!existing) throw new AppError('Data tidak ditemukan', 404)
+    return db.refJabatanPelaksana.update({ where: { id }, data: dto })
   },
 
   pendidikan() {

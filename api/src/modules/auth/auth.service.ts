@@ -1,10 +1,13 @@
+import { randomUUID } from 'crypto'
 import type { User, Role } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { env } from '@/core/config/env'
 import { comparePassword, hashPassword, isPasswordInHistory } from '@/core/security/password.helper'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/core/security/jwt.helper'
+import { ROLES } from '@/shared/constants'
 import type { AuthUserResponseDto, LoginResponseDto, RefreshResponseDto } from './dto/auth-response.dto'
+import type { RegisterDto } from './dto/register.dto'
 
 type UserWithRole = User & { role: Role }
 
@@ -67,6 +70,130 @@ const issueTokens = async (
 }
 
 export const authService = {
+  unitOrganisasi() {
+    return db.refUnitOrganisasi.findMany({
+      where: {
+        OR: [
+          { level: { in: [2, 3] } },
+          { isOpd: true },
+        ],
+      },
+      select: {
+        id: true,
+        nama: true,
+        idAtasan: true,
+        level: true,
+        isOpd: true,
+      },
+      orderBy: [{ level: 'asc' }, { nama: 'asc' }],
+    })
+  },
+
+  async asnByNip(nip: string) {
+    if (!/^\d{18}$/.test(nip)) throw new AppError('NIP harus terdiri dari 18 digit', 422)
+
+    const asn = await db.asn.findFirst({
+      where: { nipBaru: nip, deletedAt: null, statusPegawai: 'Aktif' },
+      select: {
+        id: true,
+        nipBaru: true,
+        nama: true,
+        email: true,
+        nomorHp: true,
+        unitOrganisasiId: true,
+        unitOrganisasi: { select: { id: true, nama: true } },
+      },
+    })
+
+    if (!asn) throw new AppError('Data ASN aktif dengan NIP ini tidak ditemukan', 404)
+
+    return asn
+  },
+
+  async register(dto: RegisterDto, ipAddress?: string, userAgent?: string) {
+    const asn = await db.asn.findFirst({
+      where: { nipBaru: dto.nip, deletedAt: null, statusPegawai: 'Aktif' },
+      select: { id: true, nama: true },
+    })
+    if (!asn) throw new AppError('Data ASN aktif dengan NIP ini tidak ditemukan', 404)
+
+    const unit = await db.refUnitOrganisasi.findUnique({ where: { id: dto.unitOrganisasiId } })
+    if (!unit) throw new AppError('Unit organisasi tidak ditemukan', 404)
+
+    const role = await db.role.findFirst({ where: { nama: ROLES.PENGELOLA_OPD, deletedAt: null } })
+    if (!role) throw new AppError('Role default operator belum tersedia', 500)
+
+    const existing = await db.user.findFirst({
+      where: {
+        deletedAt: null,
+        OR: [
+          { username: dto.nip },
+          { email: dto.email },
+          { asnId: asn.id },
+        ],
+      },
+    })
+
+    if (existing?.username === dto.nip || existing?.asnId === asn.id) {
+      throw new AppError('NIP sudah terdaftar', 409)
+    }
+    if (existing?.email === dto.email) throw new AppError('Email sudah terdaftar', 409)
+
+    const passwordHash = await hashPassword(dto.password)
+    const user = await db.$transaction(async (tx) => {
+      const registeredUser = await tx.user.create({
+        data: {
+          id: randomUUID(),
+          username: dto.nip,
+          passwordHash,
+          namaLengkap: asn.nama,
+          email: dto.email,
+          nomorHp: dto.nomorHp,
+          unitOrganisasiId: dto.unitOrganisasiId,
+          asnId: asn.id,
+          roleId: role.id,
+          isActive: false,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+        },
+        include: { role: true },
+      })
+
+      await tx.userPasswordHistory.create({ data: { userId: registeredUser.id, passwordHash } })
+      await tx.auditLog.create({
+        data: {
+          userId: registeredUser.id,
+          userNama: registeredUser.namaLengkap,
+          action: 'REGISTER_USER',
+          entityType: 'User',
+          entityId: registeredUser.id,
+          ipAddress,
+          userAgent,
+          newValues: {
+            username: registeredUser.username,
+            email: registeredUser.email,
+            roleId: registeredUser.roleId.toString(),
+            unitOrganisasiId: registeredUser.unitOrganisasiId,
+            isActive: registeredUser.isActive,
+          },
+        },
+      })
+
+      return registeredUser
+    })
+
+    return {
+      id: user.id,
+      username: user.username,
+      namaLengkap: user.namaLengkap,
+      email: user.email,
+      nomorHp: user.nomorHp,
+      roleNama: user.role.nama,
+      unitOrganisasiId: user.unitOrganisasiId,
+      isActive: user.isActive,
+    }
+  },
+
   async login(
     username: string,
     password: string,

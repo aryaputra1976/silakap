@@ -52,12 +52,27 @@ export const referensiController = {
       next(error)
     }
   },
+  jenisJabatan: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendSuccess(res, await referensiService.jenisJabatan()) } catch (e) { next(e) }
+  },
+  createJenisJabatan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendCreated(res, await referensiService.createJenisJabatan(req.body), 'Jenis jabatan berhasil dibuat') } catch (e) { next(e) }
+  },
+  updateJenisJabatan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendSuccess(res, await referensiService.updateJenisJabatan(req.params.id, req.body), 'Jenis jabatan berhasil diperbarui') } catch (e) { next(e) }
+  },
   jabatanStruktural: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       sendSuccess(res, await referensiService.jabatanStruktural(req.query.unitOrganisasiId as string | undefined))
     } catch (error) {
       next(error)
     }
+  },
+  createJabatanStruktural: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendCreated(res, await referensiService.createJabatanStruktural(req.body), 'Jabatan struktural berhasil dibuat') } catch (e) { next(e) }
+  },
+  updateJabatanStruktural: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendSuccess(res, await referensiService.updateJabatanStruktural(req.params.id, req.body), 'Jabatan struktural berhasil diperbarui') } catch (e) { next(e) }
   },
   jabatanFungsional: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -66,12 +81,24 @@ export const referensiController = {
       next(error)
     }
   },
+  createJabatanFungsional: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendCreated(res, await referensiService.createJabatanFungsional(req.body), 'Jabatan fungsional berhasil dibuat') } catch (e) { next(e) }
+  },
+  updateJabatanFungsional: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendSuccess(res, await referensiService.updateJabatanFungsional(req.params.id, req.body), 'Jabatan fungsional berhasil diperbarui') } catch (e) { next(e) }
+  },
   jabatanPelaksana: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       sendSuccess(res, await referensiService.jabatanPelaksana())
     } catch (error) {
       next(error)
     }
+  },
+  createJabatanPelaksana: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendCreated(res, await referensiService.createJabatanPelaksana(req.body), 'Jabatan pelaksana berhasil dibuat') } catch (e) { next(e) }
+  },
+  updateJabatanPelaksana: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try { sendSuccess(res, await referensiService.updateJabatanPelaksana(req.params.id, req.body), 'Jabatan pelaksana berhasil diperbarui') } catch (e) { next(e) }
   },
   pendidikan: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

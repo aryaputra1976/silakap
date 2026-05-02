@@ -38,8 +38,5 @@ Thumbs.db
 # TypeScript build info
 *.tsbuildinfo
 
-# Codex / planning docs (opsional — hapus baris ini jika ingin di-commit)
-CODEX_*.md
-CODEX_PROMPT*.md
-CODEX_UI*.md
-CODEX_FE*.md
+# Markdown docs (tidak perlu di-commit)
+*.md

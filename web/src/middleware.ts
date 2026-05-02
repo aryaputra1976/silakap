@@ -3,13 +3,21 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = [
   "/authentication/sign-in",
+  "/authentication/sign-up",
   "/authentication/forgot-password",
   "/authentication/reset-password",
 ];
 
+const PUBLIC_FILE = /\.(.*)$/;
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("accessToken")?.value;
+
+  if (PUBLIC_FILE.test(pathname)) {
+    return NextResponse.next();
+  }
+
   const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
   if (!token && !isPublic) {
@@ -24,5 +32,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|public).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|.*\\..*).*)"],
 };
