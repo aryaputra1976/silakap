@@ -4,7 +4,7 @@ import { db } from '@/core/database/prisma.client'
 export const dashboardService = {
   async ringkasan(_userRoleName: string, unitOrganisasiId?: string) {
     const where: Prisma.UsulanLayananWhereInput = unitOrganisasiId
-      ? { unitOrganisasiId, deletedAt: null }
+      ? { unitOrganisasiId: BigInt(unitOrganisasiId), deletedAt: null }
       : { deletedAt: null }
 
     const [

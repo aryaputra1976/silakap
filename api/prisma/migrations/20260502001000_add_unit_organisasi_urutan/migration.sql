@@ -1,0 +1,3 @@
+-- Kept as an empty migration marker because this migration folder already exists
+-- in the project history. The unit organisasi ordering fields are represented
+-- by the current schema/migrations around `level` and `is_opd`.

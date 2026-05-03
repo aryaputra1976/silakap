@@ -60,7 +60,7 @@ export const notifikasiService = {
   async sendToUnitRole(unitOrganisasiId: string, roleName: string, payload: NotifikasiPayload): Promise<void> {
     const users = await db.user.findMany({
       where: {
-        unitOrganisasiId,
+        unitOrganisasiId: BigInt(unitOrganisasiId),
         role: { nama: roleName, deletedAt: null },
         isActive: true,
         deletedAt: null,

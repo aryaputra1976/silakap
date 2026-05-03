@@ -5,9 +5,11 @@ import type {
   AsnDetail,
   AsnPeremajaan,
   AsnRiwayat,
+  AsnStats,
   PaginatedResponse,
   RefGolongan,
   RefSimple,
+  UnitOrganisasi,
 } from "@/types/models";
 
 const unwrapRef = <T>(payload: ApiResponse<T[]> | T[]) =>
@@ -21,6 +23,15 @@ export const useAsnList = (params: Record<string, unknown> = {}) =>
         params,
       });
       return data;
+    },
+  });
+
+export const useAsnStats = () =>
+  useQuery({
+    queryKey: ["asn", "stats"],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<AsnStats>>("/asn/stats");
+      return data.data;
     },
   });
 
@@ -125,7 +136,7 @@ export const useRefUnitOrganisasi = () =>
   useQuery({
     queryKey: ["ref", "unit-organisasi"],
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<RefSimple[]> | RefSimple[]>(
+      const { data } = await api.get<ApiResponse<UnitOrganisasi[]> | UnitOrganisasi[]>(
         "/referensi/unit-organisasi",
       );
       return unwrapRef(data);

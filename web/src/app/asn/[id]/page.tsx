@@ -20,9 +20,8 @@ const formatDate = (value: string | null) =>
   value ? new Date(value).toLocaleDateString("id-ID") : "-";
 
 const mainPosition = (asn: AsnDetail) =>
-  asn.jabatanStruktural?.nama ??
-  asn.jabatanFungsional?.nama ??
-  asn.jabatanPelaksana?.nama ??
+  asn.jabatan?.nama ??
+  asn.jenisJabatan?.nama ??
   "-";
 
 const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (

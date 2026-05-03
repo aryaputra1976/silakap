@@ -8,6 +8,7 @@ import { approvePeremajaanSchema, createAsnSchema, createPeremajaanSchema, updat
 export const asnRoutes = Router()
 
 asnRoutes.get('/', asnController.list)
+asnRoutes.get('/stats', asnController.stats)
 asnRoutes.get('/peremajaan', authorize(ROLES.PENGELOLA_OPD, ROLES.ANALIS_MADYA, ROLES.KABID, ROLES.ADMIN_SISTEM), asnController.listPeremajaan)
 asnRoutes.post('/peremajaan', authorize(ROLES.PENGELOLA_OPD, ROLES.ANALIS_MADYA), validate(createPeremajaanSchema), asnController.createPeremajaan)
 asnRoutes.put('/peremajaan/:id/approve', authorize(ROLES.ANALIS_MADYA, ROLES.KABID, ROLES.ADMIN_SISTEM), validate(approvePeremajaanSchema), asnController.approvePeremajaan)

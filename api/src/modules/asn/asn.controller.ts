@@ -3,6 +3,14 @@ import { sendCreated, sendPaginated, sendSuccess } from '@/core/http/response.he
 import { asnService } from './asn.service'
 
 export const asnController = {
+  stats: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      sendSuccess(res, await asnService.stats())
+    } catch (error) {
+      next(error)
+    }
+  },
+
   list: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await asnService.list(req.query)

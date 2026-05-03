@@ -26,7 +26,7 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       namaLengkap: user.namaLengkap,
       roleId: user.roleId,
       roleName: user.role.nama,
-      unitOrganisasiId: user.unitOrganisasiId ?? undefined,
+      unitOrganisasiId: user.unitOrganisasiId?.toString(),
     }
 
     next()

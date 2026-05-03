@@ -10,8 +10,8 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   nomorHp: z.string().optional(),
   roleId: z.coerce.bigint().positive(),
-  unitOrganisasiId: z.string().uuid().optional(),
-  asnId: z.string().uuid().optional(),
+  unitOrganisasiId: z.coerce.bigint().optional(),
+  asnId: z.coerce.bigint().optional(),
   password: z
     .string()
     .min(8)

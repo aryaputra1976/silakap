@@ -10,9 +10,6 @@ import type {
   JenisLayananFull,
   PaginatedResponse,
   RefGolonganFull,
-  RefJabatanFungsional,
-  RefJabatanPelaksana,
-  RefJabatanStruktural,
   RefJenisJabatan,
   Role,
   RoleWithPermissions,
@@ -23,6 +20,10 @@ import type {
   MaintenanceArchiveResult,
   MaintenanceBackupResult,
   MaintenanceCleanupResult,
+  RefJabatan,
+  RefMaster,
+  RefPendidikan,
+  TemplateDokumenRef,
 } from "@/types/models";
 
 export const useUserList = (params: Record<string, unknown> = {}) =>
@@ -163,6 +164,29 @@ export const useRefJenisLayananAdmin = () =>
     },
   });
 
+export const useRefMasterTable = <T = RefMaster>(name: string, path: string) =>
+  useQuery({
+    queryKey: ["admin", "ref", name],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<T[]>>(path);
+      return data.data;
+    },
+  });
+
+export const useRefAgama = () => useRefMasterTable("agama", "/referensi/agama");
+export const useRefJenisKelamin = () => useRefMasterTable("jenis-kelamin", "/referensi/jenis-kelamin");
+export const useRefStatusPerkawinan = () => useRefMasterTable("status-perkawinan", "/referensi/status-perkawinan");
+export const useRefJenisPegawai = () => useRefMasterTable("jenis-pegawai", "/referensi/jenis-pegawai");
+export const useRefKedudukanHukum = () => useRefMasterTable("kedudukan-hukum", "/referensi/kedudukan-hukum");
+export const useRefStatusAsn = () => useRefMasterTable("status-asn", "/referensi/status-asn");
+export const useRefJabatan = () => useRefMasterTable<RefJabatan>("jabatan", "/referensi/jabatan");
+export const useRefPendidikanTingkat = () => useRefMasterTable("pendidikan-tingkat", "/referensi/pendidikan-tingkat");
+export const useRefPendidikan = () => useRefMasterTable<RefPendidikan>("pendidikan", "/referensi/pendidikan");
+export const useRefWilayah = () => useRefMasterTable("wilayah", "/referensi/wilayah");
+export const useRefKpkn = () => useRefMasterTable("kpkn", "/referensi/kpkn");
+export const useRefLokasiKerja = () => useRefMasterTable("lokasi-kerja", "/referensi/lokasi-kerja");
+export const useRefTemplateDokumen = () => useRefMasterTable<TemplateDokumenRef>("template-dokumen", "/referensi/template-dokumen");
+
 export const useRefJenisJabatan = () =>
   useQuery({
     queryKey: ["admin", "ref", "jenis-jabatan"],
@@ -174,9 +198,9 @@ export const useRefJenisJabatan = () =>
 
 export const useRefJabatanStruktural = (unitOrganisasiId?: string) =>
   useQuery({
-    queryKey: ["admin", "ref", "jabatan-struktural", unitOrganisasiId],
+    queryKey: ["admin", "ref", "jabatan", "struktural", unitOrganisasiId],
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<RefJabatanStruktural[]>>("/referensi/jabatan/struktural", {
+      const { data } = await api.get<ApiResponse<RefJabatan[]>>("/referensi/jabatan/struktural", {
         params: unitOrganisasiId ? { unitOrganisasiId } : undefined,
       });
       return data.data;
@@ -185,25 +209,56 @@ export const useRefJabatanStruktural = (unitOrganisasiId?: string) =>
 
 export const useRefJabatanFungsional = () =>
   useQuery({
-    queryKey: ["admin", "ref", "jabatan-fungsional"],
+    queryKey: ["admin", "ref", "jabatan", "fungsional"],
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<RefJabatanFungsional[]>>("/referensi/jabatan/fungsional");
+      const { data } = await api.get<ApiResponse<RefJabatan[]>>("/referensi/jabatan/fungsional");
       return data.data;
     },
   });
 
 export const useRefJabatanPelaksana = () =>
   useQuery({
-    queryKey: ["admin", "ref", "jabatan-pelaksana"],
+    queryKey: ["admin", "ref", "jabatan", "pelaksana"],
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<RefJabatanPelaksana[]>>("/referensi/jabatan/pelaksana");
+      const { data } = await api.get<ApiResponse<RefJabatan[]>>("/referensi/jabatan/pelaksana");
       return data.data;
     },
   });
 
 export const useRefActions = () => {
   const qc = useQueryClient();
+  const invalidateRef = (name: string) =>
+    void qc.invalidateQueries({ queryKey: ["admin", "ref", name] });
   return {
+    createMaster: useMutation({
+      mutationFn: ({
+        path,
+        body,
+      }: {
+        name: string;
+        path: string;
+        body: Record<string, unknown>;
+      }) => api.post(path, body),
+      onSuccess: (_data, variables) => invalidateRef(variables.name),
+    }),
+    updateMaster: useMutation({
+      mutationFn: ({
+        path,
+        id,
+        body,
+      }: {
+        name: string;
+        path: string;
+        id: string;
+        body: Record<string, unknown>;
+      }) => api.put(`${path}/${id}`, body),
+      onSuccess: (_data, variables) => invalidateRef(variables.name),
+    }),
+    removeMaster: useMutation({
+      mutationFn: ({ path, id }: { name: string; path: string; id: string }) =>
+        api.delete(`${path}/${id}`),
+      onSuccess: (_data, variables) => invalidateRef(variables.name),
+    }),
     createGolongan: useMutation({
       mutationFn: (body: Record<string, unknown>) =>
         api.post("/referensi/golongan", body),
@@ -286,30 +341,30 @@ export const useRefActions = () => {
     }),
     createJabatanStruktural: useMutation({
       mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jabatan/struktural", body),
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-struktural"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     updateJabatanStruktural: useMutation({
       mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
         api.put(`/referensi/jabatan/struktural/${id}`, body),
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-struktural"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     createJabatanFungsional: useMutation({
       mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jabatan/fungsional", body),
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-fungsional"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     updateJabatanFungsional: useMutation({
       mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
         api.put(`/referensi/jabatan/fungsional/${id}`, body),
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-fungsional"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     createJabatanPelaksana: useMutation({
       mutationFn: (body: Record<string, unknown>) => api.post("/referensi/jabatan/pelaksana", body),
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-pelaksana"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     updateJabatanPelaksana: useMutation({
       mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
         api.put(`/referensi/jabatan/pelaksana/${id}`, body),
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-pelaksana"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     importJabatanStruktural: useMutation({
       mutationFn: (file: File) => {
@@ -317,7 +372,7 @@ export const useRefActions = () => {
         form.append("file", file);
         return api.post<ApiResponse<ImportBulkResult>>("/referensi/jabatan/struktural/import", form, { timeout: 120_000 });
       },
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-struktural"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     importJabatanFungsional: useMutation({
       mutationFn: (file: File) => {
@@ -325,7 +380,7 @@ export const useRefActions = () => {
         form.append("file", file);
         return api.post<ApiResponse<ImportBulkResult>>("/referensi/jabatan/fungsional/import", form, { timeout: 120_000 });
       },
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-fungsional"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
     importJabatanPelaksana: useMutation({
       mutationFn: (file: File) => {
@@ -333,7 +388,7 @@ export const useRefActions = () => {
         form.append("file", file);
         return api.post<ApiResponse<ImportBulkResult>>("/referensi/jabatan/pelaksana/import", form, { timeout: 120_000 });
       },
-      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan-pelaksana"] }),
+      onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "ref", "jabatan"] }),
     }),
   };
 };

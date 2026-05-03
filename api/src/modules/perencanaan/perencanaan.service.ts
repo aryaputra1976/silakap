@@ -67,7 +67,7 @@ export const perencanaanService = {
     if (existing) throw new AppError('ASN sudah memiliki perencanaan pensiun', 409)
 
     const result = await db.perencanaanPensiun.create({ data: dto })
-    await auditLog(actor, 'CREATE_PERENCANAAN', result.id.toString(), { asnId: dto.asnId })
+    await auditLog(actor, 'CREATE_PERENCANAAN', result.id.toString(), { asnId: dto.asnId.toString() })
     return result
   },
 
@@ -82,7 +82,7 @@ export const perencanaanService = {
     }
 
     const result = await db.perencanaanPensiun.update({ where: { id: perencanaanId }, data: dto })
-    await auditLog(actor, 'UPDATE_PERENCANAAN', id, { asnId: result.asnId })
+    await auditLog(actor, 'UPDATE_PERENCANAAN', id, { asnId: result.asnId.toString() })
     return result
   },
 
@@ -104,7 +104,7 @@ export const perencanaanService = {
       where: { id: perencanaanId },
       data: { sudahDiproses: true },
     })
-    await auditLog(actor, 'SELESAI_PERENCANAAN', id, { asnId: result.asnId })
+    await auditLog(actor, 'SELESAI_PERENCANAAN', id, { asnId: result.asnId.toString() })
     return result
   },
 }

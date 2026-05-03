@@ -156,7 +156,16 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
 
   Admin_Sistem: [
     { label: "Dashboard", href: "/dashboard/admin", icon: "admin_panel_settings" },
-    { label: "Health Dashboard", href: "/admin/health", icon: "health_and_safety" },
+    {
+      label: "Data ASN",
+      href: "#",
+      icon: "people",
+      children: [
+        { label: "Daftar ASN", href: "/asn" },
+        { label: "Peremajaan ASN", href: "/asn/peremajaan" },
+        { label: "Perencanaan Pensiun", href: "/perencanaan" },
+      ],
+    },
     {
       label: "Layanan",
       href: "#",
@@ -167,22 +176,37 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
       ],
     },
     {
-      label: "User & Role",
+      label: "Integrasi SIASN",
+      href: "#",
+      icon: "sync",
+      children: [
+        { label: "Import ASN", href: "/admin/integrasi/import-asn" },
+        { label: "Import Referensi", href: "/admin/integrasi/import-referensi" },
+        { label: "Log Import", href: "/admin/integrasi#log" },
+        { label: "Validasi Data", href: "/admin/integrasi" },
+      ],
+    },
+    {
+      label: "Referensi",
+      href: "#",
+      icon: "dataset",
+      children: [
+        { label: "Referensi ASN", href: "/admin/referensi?tab=asn" },
+        { label: "Jabatan & Golongan", href: "/admin/referensi?tab=jabatan" },
+        { label: "Pendidikan", href: "/admin/referensi?tab=pendidikan" },
+        { label: "Wilayah & Unit", href: "/admin/referensi?tab=wilayah" },
+        { label: "Layanan", href: "/admin/referensi?tab=layanan" },
+      ],
+    },
+    {
+      label: "Administrasi",
       href: "#",
       icon: "manage_accounts",
       children: [
         { label: "Users", href: "/admin/users" },
         { label: "Roles & Permission", href: "/admin/roles" },
-      ],
-    },
-    {
-      label: "Integrasi SIASN",
-      href: "#",
-      icon: "sync",
-      children: [
-        { label: "Status & Validasi", href: "/admin/integrasi" },
-        { label: "Import ASN", href: "/admin/integrasi#import-asn" },
-        { label: "Log Import", href: "/admin/integrasi#log" },
+        { label: "Audit Log", href: "/audit" },
+        { label: "Health Dashboard", href: "/admin/health" },
       ],
     },
     {
@@ -194,13 +218,9 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
         { label: "Pengaturan Email", href: "/admin/pengaturan/email" },
         { label: "Notifikasi", href: "/admin/pengaturan/notifikasi" },
         { label: "Laporan Otomatis", href: "/admin/pengaturan/laporan-otomatis" },
-        { label: "Referensi Data", href: "/admin/referensi" },
       ],
     },
     { label: "Laporan", href: "/laporan", icon: "assessment" },
-    { label: "Perencanaan Pensiun", href: "/perencanaan", icon: "event" },
-    { label: "Audit Log", href: "/audit", icon: "policy" },
-    { label: "Data ASN", href: "/asn", icon: "people" },
     { label: "Notifikasi", href: "/notifikasi", icon: "notifications" },
   ],
 };

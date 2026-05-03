@@ -4,6 +4,7 @@ import { db } from '@/core/database/prisma.client'
 const listInclude = {
   golongan: { select: { nama: true } },
   jenisJabatan: { select: { nama: true } },
+  jabatan: { select: { id: true, nama: true } },
   unitOrganisasi: { select: { nama: true } },
   tingkatPendidikan: { select: { nama: true } },
 } satisfies Prisma.AsnInclude
@@ -11,9 +12,7 @@ const listInclude = {
 const detailInclude = {
   golongan: true,
   jenisJabatan: true,
-  jabatanStruktural: true,
-  jabatanFungsional: true,
-  jabatanPelaksana: true,
+  jabatan: true,
   unitOrganisasi: true,
   tingkatPendidikan: true,
   bidangPendidikan: true,
@@ -34,23 +33,23 @@ export const asnRepository = {
   },
 
   findById(id: string) {
-    return db.asn.findFirst({ where: { id, deletedAt: null }, include: detailInclude })
+    return db.asn.findFirst({ where: { id: BigInt(id), deletedAt: null }, include: detailInclude })
   },
 
   findByNip(nipBaru: string) {
     return db.asn.findFirst({ where: { nipBaru, deletedAt: null } })
   },
 
-  create(id: string, data: Omit<Prisma.AsnUncheckedCreateInput, 'id'>) {
-    return db.asn.create({ data: { ...data, id }, include: detailInclude })
+  create(data: Omit<Prisma.AsnUncheckedCreateInput, 'id'>) {
+    return db.asn.create({ data, include: detailInclude })
   },
 
   update(id: string, data: Prisma.AsnUncheckedUpdateInput) {
-    return db.asn.update({ where: { id }, data, include: detailInclude })
+    return db.asn.update({ where: { id: BigInt(id) }, data, include: detailInclude })
   },
 
   softDelete(id: string) {
-    return db.asn.update({ where: { id }, data: { deletedAt: new Date() } })
+    return db.asn.update({ where: { id: BigInt(id) }, data: { deletedAt: new Date() } })
   },
 
   count(where: Prisma.AsnWhereInput) {

@@ -217,12 +217,17 @@ export interface AsnDetail extends Asn {
   unitOrganisasi: { id: string; nama: string } | null;
   tingkatPendidikan: { id: string; nama: string } | null;
   bidangPendidikan: { id: string; nama: string } | null;
-  jabatanStruktural: { id: string; nama: string } | null;
-  jabatanFungsional: { id: string; nama: string } | null;
-  jabatanPelaksana: { id: string; nama: string } | null;
+  jabatan: { id: string; nama: string } | null;
   jenisKelamin: { id: string; nama: string } | null;
   agama: { id: string; nama: string } | null;
   statusKawin: { id: string; nama: string } | null;
+}
+
+export interface AsnStats {
+  total: number;
+  pns: number;
+  pppk: number;
+  pppkParuhWaktu: number;
 }
 
 export interface AsnRiwayat {
@@ -358,18 +363,63 @@ export interface RoleWithPermissions extends Role {
 
 export interface RefGolonganFull {
   id: string;
+  idSiasn?: string | null;
   kode: string;
   nama: string;
   roman: string | null;
   tingkat: number | null;
+  isActive?: boolean;
 }
 
 export interface UnitOrganisasi {
   id: string;
+  idSiasn?: string | null;
+  kode?: string | null;
   nama: string;
   idAtasan: string | null;
   level: number | null;
   isOpd: boolean;
+  isActive?: boolean;
+}
+
+export interface RefMaster {
+  id: string;
+  idSiasn?: string | null;
+  kode?: string | null;
+  nama: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RefJabatan {
+  id: string;
+  idSiasn: string | null;
+  kode: string | null;
+  nama: string;
+  jenisJabatanId: string | null;
+  unitOrganisasiId: string | null;
+  eselonId: number | null;
+  jenjang: string | null;
+  bup: number | null;
+  isActive: boolean;
+  jenisJabatan?: { id: string; nama: string } | null;
+  unitOrganisasi?: { id: string; nama: string } | null;
+}
+
+export interface RefPendidikan extends RefMaster {
+  tingkatId?: string | null;
+  tingkat?: { id: string; nama: string } | null;
+}
+
+export interface TemplateDokumenRef {
+  id: string;
+  jenisLayananId: string | null;
+  kode: string;
+  nama: string;
+  deskripsi: string | null;
+  isActive: boolean;
+  jenisLayanan?: { id: string; kode: string; nama: string } | null;
 }
 
 export interface JenisLayananFull {
@@ -389,38 +439,11 @@ export interface JenisLayananFull {
 
 export interface RefJenisJabatan {
   id: string;
+  idSiasn?: string | null;
+  kode?: string | null;
   nama: string;
   keterangan: string | null;
-}
-
-export interface RefJabatanStruktural {
-  id: string;
-  nama: string;
-  unitOrganisasiId: string;
-  unitOrganisasi?: { id: string; nama: string };
-  eselonId: number | null;
-  bup: number;
-  kode: string | null;
-  idSiasn: string | null;
-  isActive: boolean;
-}
-
-export interface RefJabatanFungsional {
-  id: string;
-  kode: string | null;
-  nama: string;
-  jenjang: string | null;
-  bup: number;
-  idSiasn: string | null;
-  isActive: boolean;
-}
-
-export interface RefJabatanPelaksana {
-  id: string;
-  kode: string | null;
-  nama: string;
-  idSiasn: string | null;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 export interface ConfigSla {

@@ -15,9 +15,7 @@ type UsulanAiContext = Prisma.UsulanLayananGetPayload<{
       include: {
         golongan: true
         jenisJabatan: true
-        jabatanStruktural: true
-        jabatanFungsional: true
-        jabatanPelaksana: true
+        jabatan: true
         unitOrganisasi: true
         tingkatPendidikan: true
       }
@@ -73,9 +71,7 @@ const buildUsulanContext = (usulan: UsulanAiContext): string => {
   const activeSla = usulan.slaTracker.find((item) => !item.selesaiAt)
   const missingRequirements = findMissingRequirements(usulan)
   const jabatan =
-    usulan.asn.jabatanStruktural?.nama ??
-    usulan.asn.jabatanFungsional?.nama ??
-    usulan.asn.jabatanPelaksana?.nama ??
+    usulan.asn.jabatan?.nama ??
     null
 
   return JSON.stringify(
@@ -166,9 +162,7 @@ const getUsulanForAi = async (id: string, actor: Actor): Promise<UsulanAiContext
         include: {
           golongan: true,
           jenisJabatan: true,
-          jabatanStruktural: true,
-          jabatanFungsional: true,
-          jabatanPelaksana: true,
+          jabatan: true,
           unitOrganisasi: true,
           tingkatPendidikan: true,
         },
@@ -192,7 +186,7 @@ const getUsulanForAi = async (id: string, actor: Actor): Promise<UsulanAiContext
   })
 
   if (!usulan) throw new AppError('Usulan tidak ditemukan', 404)
-  if (!canReadAllUsulan(actor?.roleName) && actor?.unitOrganisasiId !== usulan.unitOrganisasiId) {
+  if (!canReadAllUsulan(actor?.roleName) && actor?.unitOrganisasiId !== usulan.unitOrganisasiId.toString()) {
     throw new AppError('Anda tidak memiliki akses ke usulan ini', 403)
   }
 

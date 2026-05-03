@@ -13,19 +13,23 @@ interface SidebarMenuProps {
 }
 
 const normalizePath = (href: string) => {
-  const [path] = href.split("?");
+  const [path] = href.split(/[?#]/);
   return path.endsWith("/") && path !== "/" ? path.slice(0, -1) : path;
 };
 
+// Used for parent items: true if current path IS or is UNDER the item path
 const isActivePath = (pathname: string, href: string) => {
   const itemPath = normalizePath(href);
   const currentPath = normalizePath(pathname);
-
-  if (itemPath === "#") {
-    return false;
-  }
-
+  if (itemPath === "#") return false;
   return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`);
+};
+
+// Used for child (leaf) items: exact match only — prevents sibling/parent highlight
+const isActiveExact = (pathname: string, href: string) => {
+  const itemPath = normalizePath(href);
+  if (itemPath === "#") return false;
+  return normalizePath(pathname) === itemPath;
 };
 
 const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
@@ -157,7 +161,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                             <Link
                               href={child.href}
                               className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                                isActivePath(pathname, child.href)
+                                isActiveExact(pathname, child.href)
                                   ? "active"
                                   : ""
                               }`}

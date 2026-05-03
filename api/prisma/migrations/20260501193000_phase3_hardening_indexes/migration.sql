@@ -4,7 +4,7 @@ CREATE INDEX `usulan_layanan_deleted_at_status_created_at_idx`
   ON `usulan_layanan` (`deleted_at`, `status`, `createdAt`);
 
 CREATE INDEX `usulan_layanan_unit_organisasi_id_status_created_at_idx`
-  ON `usulan_layanan` (`unit_organisasi_id`, `status`, `createdAt`);
+  ON `usulan_layanan` (`unitOrganisasiId`, `status`, `createdAt`);
 
 CREATE INDEX `usulan_layanan_status_tgl_selesai_idx`
   ON `usulan_layanan` (`status`, `tgl_selesai`);

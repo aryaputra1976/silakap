@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { randomUUID } from 'node:crypto'
 import * as XLSX from 'xlsx'
 import { Prisma, StatusPegawai } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
@@ -58,6 +57,14 @@ const parseOptionalDate = (value: string): Date | undefined => {
   return Number.isNaN(date.getTime()) ? undefined : date
 }
 
+const parseJenisKelamin = (value: string): number | undefined => {
+  const v = toStringValue(value).toLowerCase().trim()
+  if (v === 'm' || v === 'l' || v.includes('laki')) return 1
+  if (v === 'f' || v === 'p' || v.includes('perempuan') || v.includes('wanita')) return 2
+  const n = parseInt(v, 10)
+  return n === 1 || n === 2 ? n : undefined
+}
+
 const parseBoolean = (value: string): boolean | undefined => {
   const normalized = toStringValue(value).toLowerCase()
   if (['1', 'true', 'ya', 'y', 'valid', 'aktif'].includes(normalized)) return true
@@ -100,7 +107,18 @@ const parseAsnRow = (row: Record<string, unknown>) => {
     nama: pick(row, ['nama', 'nama lengkap', 'nama_asn', 'namaasn', 'namalengkap', 'nama pegawai', 'namapegawai']),
     gelarDepan: cleanNullable(pick(row, ['gelar depan', 'gelardepan'])),
     gelarBelakang: cleanNullable(pick(row, ['gelar belakang', 'gelarbelakang'])),
-    tempatLahir: cleanNullable(pick(row, ['tempat lahir nama', 'tempat lahir', 'tempatlahir'])),
+    tempatLahirId: cleanNullable(pick(row, ['tempat lahir id', 'tempatlahirid', 'id tempat lahir', 'idtempatlahir'])),
+    tempatLahirNama: cleanNullable(pick(row, ['tempat lahir nama', 'tempat lahir', 'tempatlahir'])),
+    jenisKelaminId: parseJenisKelamin(pick(row, ['jenis kelamin', 'jeniskelamin', 'jenis kelamin id', 'jeniskelaminid'])),
+    agamaId: parseOptionalInt(pick(row, ['agama id', 'agamaid', 'id agama', 'idagama'])),
+    statusKawinId: parseOptionalInt(pick(row, ['status kawin id', 'statuskawinid', 'kawin id', 'kawinid'])),
+    golonganKode: cleanNullable(pick(row, ['golongan kode', 'golongankode', 'kode golongan', 'kodegolongan'])),
+    jenisJabatanId: parseOptionalInt(pick(row, ['jenis jabatan id', 'jenisjabatanid', 'id jenis jabatan'])),
+    jabatanFungsionalSiasnId: cleanNullable(pick(row, ['jabatan fungsional id', 'jabatanfungsionalid', 'id jabatan fungsional', 'idjabatanfungsional'])),
+    jabatanStrukturaLSiasnId: cleanNullable(pick(row, ['jabatan struktural id', 'jabatanstrukturalid', 'id jabatan struktural', 'idjabatanstruktural'])),
+    jabatanPelaksanaSiasnId: cleanNullable(pick(row, ['jabatan pelaksana id', 'jabatanpelaksanaid', 'id jabatan pelaksana', 'idjabatanpelaksana'])),
+    tingkatPendidikanId: parseOptionalInt(pick(row, ['tingkat pendidikan id', 'tingkatpendidikanid', 'pendidikan id', 'pendidikanid'])),
+    bidangPendidikanId: cleanNullable(pick(row, ['bidang pendidikan id', 'bidangpendidikanid', 'bidang studi id', 'bidangstudiid'])),
     tanggalLahir: parseOptionalDate(pick(row, ['tanggal lahir', 'tanggallahir', 'tgl lahir', 'tgllahir'])),
     nik: nik || null,
     email: pick(row, ['email', 'email pribadi', 'emailpribadi']) || null,
@@ -109,7 +127,8 @@ const parseAsnRow = (row: Record<string, unknown>) => {
     alamat: cleanNullable(pick(row, ['alamat'])),
     npwp: cleanNullable(digitsOnly(pick(row, ['npwp nomor', 'npwp']))),
     bpjs: cleanNullable(digitsOnly(pick(row, ['bpjs']))),
-    jenisPegawai: cleanNullable(pick(row, ['jenis pegawai nama', 'jenis pegawai', 'jenispegawai'])),
+    jenisPegawaiId: parseOptionalInt(pick(row, ['jenis pegawai id', 'jenispegawaiid', 'id jenis pegawai'])),
+    jenisPegawaiNama: cleanNullable(pick(row, ['jenis pegawai nama', 'jenispegawainama', 'jenis pegawai', 'jenispegawai'])),
     kedudukanHukum: cleanNullable(pick(row, ['kedudukan hukum nama', 'kedudukan hukum', 'kedudukanhukum'])),
     nomorSkCpns: cleanNullable(pick(row, ['nomor sk cpns', 'nomorskcpns'])),
     tanggalSkCpns: parseOptionalDate(pick(row, ['tanggal sk cpns', 'tanggalskcpns'])),
@@ -189,13 +208,41 @@ integrasiRoutes.post('/import/asn', upload.single('file'), async (req, res, next
     const kolomTerdeteksi = rows.length > 0 ? Object.keys(rows[0]).join(', ') : '(tidak ada baris)'
     const parsedRows = rows.map((row) => parseAsnRow(row))
     const candidateUnitIds = [...new Set(parsedRows.map((row) => row.unitOrganisasiId).filter((id): id is string => Boolean(id)))]
-    const existingUnitIds = candidateUnitIds.length > 0
-      ? new Set((await db.refUnitOrganisasi.findMany({
-          where: { id: { in: candidateUnitIds } },
-          select: { id: true },
-        })).map((unit) => unit.id))
-      : new Set<string>()
-    const skippedUnitIds = new Set(candidateUnitIds.filter((id) => !existingUnitIds.has(id)))
+    const existingUnits = candidateUnitIds.length > 0
+      ? await db.refUnitOrganisasi.findMany({
+          where: { idSiasn: { in: candidateUnitIds } },
+          select: { id: true, idSiasn: true },
+        })
+      : []
+    const unitIdBySiasn = new Map(existingUnits.map((unit) => [unit.idSiasn!, unit.id]))
+    const skippedUnitIds = new Set(candidateUnitIds.filter((id) => !unitIdBySiasn.has(id)))
+
+    // Golongan lookup by kode
+    const candidateGolonganKodes = [...new Set(parsedRows.map((r) => r.golonganKode).filter((k): k is string => Boolean(k)))]
+    const golonganKodeToId = candidateGolonganKodes.length > 0
+      ? new Map((await db.refGolongan.findMany({
+          where: { kode: { in: candidateGolonganKodes } },
+          select: { id: true, kode: true },
+        })).map((g) => [g.kode, g.id]))
+      : new Map<string, bigint>()
+
+    // Jabatan lookup by idSiasn. Semua jenis jabatan SIASN disimpan dalam tabel ref_jabatan.
+    const candidateJabatanIds = [...new Set(parsedRows
+      .flatMap((r) => [r.jabatanStrukturaLSiasnId, r.jabatanFungsionalSiasnId, r.jabatanPelaksanaSiasnId])
+      .filter((id): id is string => Boolean(id)))]
+    const jabatanSiasnToId = candidateJabatanIds.length > 0
+      ? new Map((await db.refJabatan.findMany({
+          where: { idSiasn: { in: candidateJabatanIds } },
+          select: { id: true, idSiasn: true },
+        })).map((j) => [j.idSiasn!, j.id]))
+      : new Map<string, bigint>()
+
+    // Bidang pendidikan: direct id lookup (string UUID)
+    const candidateBidangIds = [...new Set(parsedRows.map((r) => r.bidangPendidikanId).filter((id): id is string => Boolean(id)))]
+    const existingBidangIds = candidateBidangIds.length > 0
+      ? new Map((await db.refPendidikan.findMany({ where: { idSiasn: { in: candidateBidangIds } }, select: { id: true, idSiasn: true } })).map((b) => [b.idSiasn!, b.id]))
+      : new Map<string, bigint>()
+
     let successBaris = 0
     const errors: Prisma.SiasnImportErrorCreateManyInput[] = []
 
@@ -219,17 +266,51 @@ integrasiRoutes.post('/import/asn', upload.single('file'), async (req, res, next
       }
 
       try {
-        const unitOrganisasiId = parsed.unitOrganisasiId && existingUnitIds.has(parsed.unitOrganisasiId)
-          ? parsed.unitOrganisasiId
+        const unitOrganisasiId = parsed.unitOrganisasiId && unitIdBySiasn.has(parsed.unitOrganisasiId)
+          ? unitIdBySiasn.get(parsed.unitOrganisasiId)!
           : null
+        const jabatanId =
+          (parsed.jabatanStrukturaLSiasnId ? jabatanSiasnToId.get(parsed.jabatanStrukturaLSiasnId) : undefined) ??
+          (parsed.jabatanFungsionalSiasnId ? jabatanSiasnToId.get(parsed.jabatanFungsionalSiasnId) : undefined) ??
+          (parsed.jabatanPelaksanaSiasnId ? jabatanSiasnToId.get(parsed.jabatanPelaksanaSiasnId) : undefined) ??
+          null
+
+        // Upsert ref_jenis_pegawai jika ada ID dan nama
+        let jenisPegawaiInternalId: bigint | null = null
+        if (parsed.jenisPegawaiId != null && parsed.jenisPegawaiNama) {
+          const jenisPegawai = await db.refJenisPegawai.upsert({
+            where: { idSiasn: String(parsed.jenisPegawaiId) },
+            create: { idSiasn: String(parsed.jenisPegawaiId), nama: parsed.jenisPegawaiNama },
+            update: { nama: parsed.jenisPegawaiNama },
+          })
+          jenisPegawaiInternalId = jenisPegawai.id
+        }
+
+        // Upsert ref_tempat_lahir jika ada ID dan nama
+        const tempatLahir = parsed.tempatLahirId && parsed.tempatLahirNama
+          ? await db.refWilayah.upsert({
+            where: { idSiasn: parsed.tempatLahirId },
+            create: { idSiasn: parsed.tempatLahirId, nama: parsed.tempatLahirNama },
+            update: { nama: parsed.tempatLahirNama },
+          })
+          : null
+
         const data = {
           nipBaru: parsed.nipBaru,
           nipLama: parsed.nipLama,
           nama: parsed.nama,
           gelarDepan: parsed.gelarDepan,
           gelarBelakang: parsed.gelarBelakang,
-          tempatLahir: parsed.tempatLahir,
+          tempatLahirId: tempatLahir?.id ?? null,
           tanggalLahir: parsed.tanggalLahir,
+          jenisKelaminId: parsed.jenisKelaminId,
+          agamaId: parsed.agamaId != null ? BigInt(parsed.agamaId) : null,
+          statusKawinId: parsed.statusKawinId != null ? BigInt(parsed.statusKawinId) : null,
+          golonganId: parsed.golonganKode ? (golonganKodeToId.get(parsed.golonganKode) ?? null) : null,
+          jenisJabatanId: parsed.jenisJabatanId != null ? BigInt(parsed.jenisJabatanId) : null,
+          jabatanId,
+          tingkatPendidikanId: parsed.tingkatPendidikanId != null ? BigInt(parsed.tingkatPendidikanId) : null,
+          bidangPendidikanId: parsed.bidangPendidikanId ? (existingBidangIds.get(parsed.bidangPendidikanId) ?? null) : null,
           nik: parsed.nik,
           nikValid: parsed.nikValid ?? Boolean(parsed.nik),
           email: parsed.email,
@@ -238,7 +319,7 @@ integrasiRoutes.post('/import/asn', upload.single('file'), async (req, res, next
           alamat: parsed.alamat,
           npwp: parsed.npwp,
           bpjs: parsed.bpjs,
-          jenisPegawai: parsed.jenisPegawai,
+          jenisPegawaiId: jenisPegawaiInternalId,
           kedudukanHukum: parsed.kedudukanHukum,
           nomorSkCpns: parsed.nomorSkCpns,
           tanggalSkCpns: parsed.tanggalSkCpns,
@@ -261,10 +342,7 @@ integrasiRoutes.post('/import/asn', upload.single('file'), async (req, res, next
 
         await db.asn.upsert({
           where: { nipBaru: parsed.nipBaru },
-          create: {
-            ...data,
-            id: randomUUID(),
-          },
+          create: data,
           update: data,
         })
         successBaris += 1

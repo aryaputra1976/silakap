@@ -14,6 +14,12 @@ import {
   createJabatanStrukturalSchema,
   createJenisJabatanSchema,
   createJenisLayananSchema,
+  createRefJenisKelaminSchema,
+  createRefJabatanSchema,
+  createRefMasterSchema,
+  createRefPendidikanSchema,
+  createRefStatusAsnSchema,
+  createTemplateDokumenSchema,
   createUnitOrganisasiSchema,
   replacePersyaratanSchema,
   updateGolonganSchema,
@@ -22,6 +28,12 @@ import {
   updateJabatanStrukturalSchema,
   updateJenisJabatanSchema,
   updateJenisLayananSchema,
+  updateRefJenisKelaminSchema,
+  updateRefJabatanSchema,
+  updateRefMasterSchema,
+  updateRefPendidikanSchema,
+  updateRefStatusAsnSchema,
+  updateTemplateDokumenSchema,
   updateUnitOrganisasiSchema,
 } from './dto/referensi.dto'
 import { referensiController } from './referensi.controller'
@@ -36,14 +48,48 @@ const chunk = <T>(items: T[], size: number): T[][] => {
   return chunks
 }
 
+const ensureJenisJabatan = (nama: string, kode: string) =>
+  db.refJenisJabatan.upsert({
+    where: { nama },
+    create: { nama, kode },
+    update: { kode },
+  })
+
+referensiRoutes.get('/agama', referensiController.agama)
+referensiRoutes.post('/agama', adminOnly, validate(createRefMasterSchema), referensiController.createAgama)
+referensiRoutes.put('/agama/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateAgama)
+referensiRoutes.delete('/agama/:id', adminOnly, referensiController.deleteAgama)
+referensiRoutes.get('/jenis-kelamin', referensiController.jenisKelamin)
+referensiRoutes.post('/jenis-kelamin', adminOnly, validate(createRefJenisKelaminSchema), referensiController.createJenisKelamin)
+referensiRoutes.put('/jenis-kelamin/:id', adminOnly, validate(updateRefJenisKelaminSchema), referensiController.updateJenisKelamin)
+referensiRoutes.delete('/jenis-kelamin/:id', adminOnly, referensiController.deleteJenisKelamin)
+referensiRoutes.get('/status-perkawinan', referensiController.statusPerkawinan)
+referensiRoutes.post('/status-perkawinan', adminOnly, validate(createRefMasterSchema), referensiController.createStatusPerkawinan)
+referensiRoutes.put('/status-perkawinan/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateStatusPerkawinan)
+referensiRoutes.delete('/status-perkawinan/:id', adminOnly, referensiController.deleteStatusPerkawinan)
+referensiRoutes.get('/jenis-pegawai', referensiController.jenisPegawai)
+referensiRoutes.post('/jenis-pegawai', adminOnly, validate(createRefMasterSchema), referensiController.createJenisPegawai)
+referensiRoutes.put('/jenis-pegawai/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateJenisPegawai)
+referensiRoutes.delete('/jenis-pegawai/:id', adminOnly, referensiController.deleteJenisPegawai)
+referensiRoutes.get('/kedudukan-hukum', referensiController.kedudukanHukum)
+referensiRoutes.post('/kedudukan-hukum', adminOnly, validate(createRefMasterSchema), referensiController.createKedudukanHukum)
+referensiRoutes.put('/kedudukan-hukum/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateKedudukanHukum)
+referensiRoutes.delete('/kedudukan-hukum/:id', adminOnly, referensiController.deleteKedudukanHukum)
+referensiRoutes.get('/status-asn', referensiController.statusAsn)
+referensiRoutes.post('/status-asn', adminOnly, validate(createRefStatusAsnSchema), referensiController.createStatusAsn)
+referensiRoutes.put('/status-asn/:id', adminOnly, validate(updateRefStatusAsnSchema), referensiController.updateStatusAsn)
+referensiRoutes.delete('/status-asn/:id', adminOnly, referensiController.deleteStatusAsn)
+
 referensiRoutes.get('/golongan', referensiController.golongan)
 referensiRoutes.post('/golongan', adminOnly, validate(createGolonganSchema), referensiController.createGolongan)
 referensiRoutes.put('/golongan/:id', adminOnly, validate(updateGolonganSchema), referensiController.updateGolongan)
+referensiRoutes.delete('/golongan/:id', adminOnly, referensiController.deleteGolongan)
 
 referensiRoutes.get('/unit-organisasi', referensiController.unitOrganisasi)
 referensiRoutes.get('/unit-organisasi/:id', referensiController.unitOrganisasiById)
 referensiRoutes.post('/unit-organisasi', adminOnly, validate(createUnitOrganisasiSchema), referensiController.createUnitOrganisasi)
 referensiRoutes.put('/unit-organisasi/:id', adminOnly, validate(updateUnitOrganisasiSchema), referensiController.updateUnitOrganisasi)
+referensiRoutes.delete('/unit-organisasi/:id', adminOnly, referensiController.deleteUnitOrganisasi)
 
 // Import Unit Organisasi dari Excel SIASN.
 // Header didukung: ID_UNOR/UNOR_ID/KODE_UNOR, NAMA_UNOR/NAMA_UNIT,
@@ -157,9 +203,9 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
     ]
     const existingExternalParents = externalParentIds.length > 0
       ? new Set((await db.refUnitOrganisasi.findMany({
-        where: { id: { in: externalParentIds } },
-        select: { id: true },
-      })).map((unit) => unit.id))
+        where: { idSiasn: { in: externalParentIds } },
+        select: { idSiasn: true },
+      })).map((unit) => unit.idSiasn).filter((id): id is string => Boolean(id)))
       : new Set<string>()
 
     for (const row of parsed) {
@@ -202,9 +248,9 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
     let diperbarui = 0
     const existingUnitIds = parsed.length > 0
       ? new Set((await db.refUnitOrganisasi.findMany({
-        where: { id: { in: parsed.map((row) => row.id) } },
-        select: { id: true },
-      })).map((unit) => unit.id))
+        where: { idSiasn: { in: parsed.map((row) => row.id) } },
+        select: { idSiasn: true },
+      })).map((unit) => unit.idSiasn).filter((id): id is string => Boolean(id)))
       : new Set<string>()
 
     const upsertOps = parsed.map((row) => {
@@ -213,14 +259,14 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
       if (existingUnitIds.has(row.id)) {
         diperbarui++
         return db.refUnitOrganisasi.update({
-          where: { id: row.id },
+          where: { idSiasn: row.id },
           data: { nama: row.nama, level, isOpd },
         })
       }
 
       berhasil++
       return db.refUnitOrganisasi.create({
-          data: { id: row.id, nama: row.nama, level, isOpd, idAtasan: null },
+          data: { idSiasn: row.id, kode: row.id, nama: row.nama, level, isOpd, idAtasan: null },
         })
     })
 
@@ -228,11 +274,16 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
       await db.$transaction(ops)
     }
 
+    const persistedUnits = await db.refUnitOrganisasi.findMany({
+      where: { idSiasn: { in: parsed.flatMap((row) => [row.id, row.idAtasan].filter((id): id is string => Boolean(id))) } },
+      select: { id: true, idSiasn: true },
+    })
+    const idBySiasn = new Map(persistedUnits.map((unit) => [unit.idSiasn!, unit.id]))
     const parentOps = parsed
-      .filter((row) => row.idAtasan)
+      .filter((row) => row.idAtasan && idBySiasn.has(row.idAtasan) && idBySiasn.has(row.id))
       .map((row) => db.refUnitOrganisasi.update({
-        where: { id: row.id },
-        data: { idAtasan: row.idAtasan },
+        where: { id: idBySiasn.get(row.id)! },
+        data: { idAtasan: idBySiasn.get(row.idAtasan!)! },
       }))
 
     for (const ops of chunk(parentOps, 100)) {
@@ -246,12 +297,15 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
 })
 
 referensiRoutes.get('/jenis-jabatan', referensiController.jenisJabatan)
+referensiRoutes.get('/jabatan', referensiController.jabatan)
 referensiRoutes.post('/jenis-jabatan', adminOnly, validate(createJenisJabatanSchema), referensiController.createJenisJabatan)
 referensiRoutes.put('/jenis-jabatan/:id', adminOnly, validate(updateJenisJabatanSchema), referensiController.updateJenisJabatan)
+referensiRoutes.delete('/jenis-jabatan/:id', adminOnly, referensiController.deleteJenisJabatan)
 
 referensiRoutes.get('/jabatan/struktural', referensiController.jabatanStruktural)
 referensiRoutes.post('/jabatan/struktural', adminOnly, validate(createJabatanStrukturalSchema), referensiController.createJabatanStruktural)
 referensiRoutes.put('/jabatan/struktural/:id', adminOnly, validate(updateJabatanStrukturalSchema), referensiController.updateJabatanStruktural)
+referensiRoutes.delete('/jabatan/struktural/:id', adminOnly, referensiController.deleteJabatanStruktural)
 
 // Import Jabatan Struktural dari Excel SIASN.
 // Header: ID/ID_JABATAN, NAMA/NAMA_JABATAN, ID_UNOR/UNOR_ID, ESELON/ESELON_ID, BUP, KODE, ID_SIASN.
@@ -298,35 +352,55 @@ referensiRoutes.post('/jabatan/struktural/import', adminOnly, upload.single('fil
     }
 
     const allUnorIds = [...new Set(parsed.map(r => r.unitOrganisasiId))]
-    const existingUnorIds = allUnorIds.length > 0
-      ? new Set((await db.refUnitOrganisasi.findMany({ where: { id: { in: allUnorIds } }, select: { id: true } })).map(r => r.id))
-      : new Set<string>()
+    const existingUnors = allUnorIds.length > 0
+      ? await db.refUnitOrganisasi.findMany({ where: { idSiasn: { in: allUnorIds } }, select: { id: true, idSiasn: true } })
+      : []
+    const unorIdBySiasn = new Map(existingUnors.map((r) => [r.idSiasn!, r.id]))
 
     const validRows = parsed.filter(row => {
-      if (!existingUnorIds.has(row.unitOrganisasiId)) {
+      if (!unorIdBySiasn.has(row.unitOrganisasiId)) {
         errors.push({ baris: row.baris, pesan: `Unit Organisasi '${row.unitOrganisasiId}' tidak ditemukan di database` })
         return false
       }
       return true
     })
 
+    const jenis = await ensureJenisJabatan('Struktural', 'STRUKTURAL')
     const existingIds = validRows.length > 0
-      ? new Set((await db.refJabatanStruktural.findMany({ where: { id: { in: validRows.map(r => r.id) } }, select: { id: true } })).map(r => r.id))
+      ? new Set((await db.refJabatan.findMany({
+        where: { idSiasn: { in: validRows.map(r => r.idSiasn ?? r.id) } },
+        select: { idSiasn: true },
+      })).map(r => r.idSiasn).filter((id): id is string => Boolean(id)))
       : new Set<string>()
 
     let berhasil = 0
     let diperbarui = 0
     const upsertOps = validRows.map(row => {
-      if (existingIds.has(row.id)) {
+      const idSiasn = row.idSiasn ?? row.id
+      if (existingIds.has(idSiasn)) {
         diperbarui++
-        return db.refJabatanStruktural.update({
-          where: { id: row.id },
-          data: { nama: row.nama, unitOrganisasiId: row.unitOrganisasiId, eselonId: row.eselonId, bup: row.bup },
+        return db.refJabatan.update({
+          where: { idSiasn },
+          data: {
+            nama: row.nama,
+            jenisJabatanId: jenis.id,
+            unitOrganisasiId: unorIdBySiasn.get(row.unitOrganisasiId)!,
+            eselonId: row.eselonId,
+            bup: row.bup,
+          },
         })
       }
       berhasil++
-      return db.refJabatanStruktural.create({
-        data: { id: row.id, nama: row.nama, unitOrganisasiId: row.unitOrganisasiId, eselonId: row.eselonId, bup: row.bup, kode: row.kode, idSiasn: row.idSiasn },
+      return db.refJabatan.create({
+        data: {
+          idSiasn,
+          kode: row.kode,
+          nama: row.nama,
+          jenisJabatanId: jenis.id,
+          unitOrganisasiId: unorIdBySiasn.get(row.unitOrganisasiId)!,
+          eselonId: row.eselonId,
+          bup: row.bup,
+        },
       })
     })
 
@@ -338,6 +412,7 @@ referensiRoutes.post('/jabatan/struktural/import', adminOnly, upload.single('fil
 referensiRoutes.get('/jabatan/fungsional', referensiController.jabatanFungsional)
 referensiRoutes.post('/jabatan/fungsional', adminOnly, validate(createJabatanFungsionalSchema), referensiController.createJabatanFungsional)
 referensiRoutes.put('/jabatan/fungsional/:id', adminOnly, validate(updateJabatanFungsionalSchema), referensiController.updateJabatanFungsional)
+referensiRoutes.delete('/jabatan/fungsional/:id', adminOnly, referensiController.deleteJabatanFungsional)
 
 // Import Jabatan Fungsional dari Excel SIASN.
 // Header: ID/ID_JABATAN, KODE/KODE_JABATAN, NAMA/NAMA_JABATAN, JENJANG, BUP, ID_SIASN.
@@ -379,19 +454,36 @@ referensiRoutes.post('/jabatan/fungsional/import', adminOnly, upload.single('fil
       parsed.push({ baris, id, kode, nama, jenjang, bup, idSiasn })
     }
 
+    const jenis = await ensureJenisJabatan('Fungsional', 'FUNGSIONAL')
     const existingIds = parsed.length > 0
-      ? new Set((await db.refJabatanFungsional.findMany({ where: { id: { in: parsed.map(r => r.id) } }, select: { id: true } })).map(r => r.id))
+      ? new Set((await db.refJabatan.findMany({
+        where: { idSiasn: { in: parsed.map(r => r.idSiasn ?? r.id) } },
+        select: { idSiasn: true },
+      })).map(r => r.idSiasn).filter((id): id is string => Boolean(id)))
       : new Set<string>()
 
     let berhasil = 0
     let diperbarui = 0
     const upsertOps = parsed.map(row => {
-      if (existingIds.has(row.id)) {
+      const idSiasn = row.idSiasn ?? row.id
+      if (existingIds.has(idSiasn)) {
         diperbarui++
-        return db.refJabatanFungsional.update({ where: { id: row.id }, data: { nama: row.nama, jenjang: row.jenjang, bup: row.bup } })
+        return db.refJabatan.update({
+          where: { idSiasn },
+          data: { nama: row.nama, jenisJabatanId: jenis.id, jenjang: row.jenjang, bup: row.bup },
+        })
       }
       berhasil++
-      return db.refJabatanFungsional.create({ data: { id: row.id, kode: row.kode, nama: row.nama, jenjang: row.jenjang, bup: row.bup, idSiasn: row.idSiasn } })
+      return db.refJabatan.create({
+        data: {
+          idSiasn,
+          kode: row.kode,
+          nama: row.nama,
+          jenisJabatanId: jenis.id,
+          jenjang: row.jenjang,
+          bup: row.bup,
+        },
+      })
     })
 
     for (const ops of chunk(upsertOps, 100)) { await db.$transaction(ops) }
@@ -402,6 +494,10 @@ referensiRoutes.post('/jabatan/fungsional/import', adminOnly, upload.single('fil
 referensiRoutes.get('/jabatan/pelaksana', referensiController.jabatanPelaksana)
 referensiRoutes.post('/jabatan/pelaksana', adminOnly, validate(createJabatanPelaksanaSchema), referensiController.createJabatanPelaksana)
 referensiRoutes.put('/jabatan/pelaksana/:id', adminOnly, validate(updateJabatanPelaksanaSchema), referensiController.updateJabatanPelaksana)
+referensiRoutes.delete('/jabatan/pelaksana/:id', adminOnly, referensiController.deleteJabatanPelaksana)
+referensiRoutes.post('/jabatan', adminOnly, validate(createRefJabatanSchema), referensiController.createJabatan)
+referensiRoutes.put('/jabatan/:id', adminOnly, validate(updateRefJabatanSchema), referensiController.updateJabatan)
+referensiRoutes.delete('/jabatan/:id', adminOnly, referensiController.deleteJabatan)
 
 // Import Jabatan Pelaksana dari Excel SIASN.
 // Header: ID/ID_JABATAN, KODE/KODE_JABATAN, NAMA/NAMA_JABATAN, ID_SIASN.
@@ -440,19 +536,24 @@ referensiRoutes.post('/jabatan/pelaksana/import', adminOnly, upload.single('file
       parsed.push({ baris, id, kode, nama, idSiasn })
     }
 
+    const jenis = await ensureJenisJabatan('Pelaksana', 'PELAKSANA')
     const existingIds = parsed.length > 0
-      ? new Set((await db.refJabatanPelaksana.findMany({ where: { id: { in: parsed.map(r => r.id) } }, select: { id: true } })).map(r => r.id))
+      ? new Set((await db.refJabatan.findMany({
+        where: { idSiasn: { in: parsed.map(r => r.idSiasn ?? r.id) } },
+        select: { idSiasn: true },
+      })).map(r => r.idSiasn).filter((id): id is string => Boolean(id)))
       : new Set<string>()
 
     let berhasil = 0
     let diperbarui = 0
     const upsertOps = parsed.map(row => {
-      if (existingIds.has(row.id)) {
+      const idSiasn = row.idSiasn ?? row.id
+      if (existingIds.has(idSiasn)) {
         diperbarui++
-        return db.refJabatanPelaksana.update({ where: { id: row.id }, data: { nama: row.nama } })
+        return db.refJabatan.update({ where: { idSiasn }, data: { nama: row.nama, jenisJabatanId: jenis.id } })
       }
       berhasil++
-      return db.refJabatanPelaksana.create({ data: { id: row.id, kode: row.kode, nama: row.nama, idSiasn: row.idSiasn } })
+      return db.refJabatan.create({ data: { idSiasn, kode: row.kode, nama: row.nama, jenisJabatanId: jenis.id } })
     })
 
     for (const ops of chunk(upsertOps, 100)) { await db.$transaction(ops) }
@@ -460,12 +561,36 @@ referensiRoutes.post('/jabatan/pelaksana/import', adminOnly, upload.single('file
   } catch (err) { next(err) }
 })
 referensiRoutes.get('/pendidikan', referensiController.pendidikan)
+referensiRoutes.post('/pendidikan', adminOnly, validate(createRefPendidikanSchema), referensiController.createPendidikan)
+referensiRoutes.put('/pendidikan/:id', adminOnly, validate(updateRefPendidikanSchema), referensiController.updatePendidikan)
+referensiRoutes.delete('/pendidikan/:id', adminOnly, referensiController.deletePendidikan)
+referensiRoutes.get('/pendidikan-tingkat', referensiController.pendidikanTingkat)
+referensiRoutes.post('/pendidikan-tingkat', adminOnly, validate(createRefMasterSchema), referensiController.createPendidikanTingkat)
+referensiRoutes.put('/pendidikan-tingkat/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updatePendidikanTingkat)
+referensiRoutes.delete('/pendidikan-tingkat/:id', adminOnly, referensiController.deletePendidikanTingkat)
 referensiRoutes.get('/bidang-pendidikan', referensiController.bidangPendidikan)
+referensiRoutes.get('/wilayah', referensiController.wilayah)
+referensiRoutes.post('/wilayah', adminOnly, validate(createRefMasterSchema), referensiController.createWilayah)
+referensiRoutes.put('/wilayah/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateWilayah)
+referensiRoutes.delete('/wilayah/:id', adminOnly, referensiController.deleteWilayah)
+referensiRoutes.get('/kpkn', referensiController.kpkn)
+referensiRoutes.post('/kpkn', adminOnly, validate(createRefMasterSchema), referensiController.createKpkn)
+referensiRoutes.put('/kpkn/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateKpkn)
+referensiRoutes.delete('/kpkn/:id', adminOnly, referensiController.deleteKpkn)
+referensiRoutes.get('/lokasi-kerja', referensiController.lokasiKerja)
+referensiRoutes.post('/lokasi-kerja', adminOnly, validate(createRefMasterSchema), referensiController.createLokasiKerja)
+referensiRoutes.put('/lokasi-kerja/:id', adminOnly, validate(updateRefMasterSchema), referensiController.updateLokasiKerja)
+referensiRoutes.delete('/lokasi-kerja/:id', adminOnly, referensiController.deleteLokasiKerja)
 
 referensiRoutes.get('/jenis-layanan', referensiController.jenisLayanan)
 referensiRoutes.post('/jenis-layanan', adminOnly, validate(createJenisLayananSchema), referensiController.createJenisLayanan)
 referensiRoutes.put('/jenis-layanan/:id', adminOnly, validate(updateJenisLayananSchema), referensiController.updateJenisLayanan)
+referensiRoutes.delete('/jenis-layanan/:id', adminOnly, referensiController.deleteJenisLayanan)
 referensiRoutes.get('/jenis-layanan/:id/persyaratan', referensiController.persyaratan)
 referensiRoutes.put('/jenis-layanan/:id/persyaratan', adminOnly, validate(replacePersyaratanSchema), referensiController.replacePersyaratan)
 
 referensiRoutes.get('/gaji-pokok', referensiController.gajiPokok)
+referensiRoutes.get('/template-dokumen', referensiController.templateDokumen)
+referensiRoutes.post('/template-dokumen', adminOnly, validate(createTemplateDokumenSchema), referensiController.createTemplateDokumen)
+referensiRoutes.put('/template-dokumen/:id', adminOnly, validate(updateTemplateDokumenSchema), referensiController.updateTemplateDokumen)
+referensiRoutes.delete('/template-dokumen/:id', adminOnly, referensiController.deleteTemplateDokumen)

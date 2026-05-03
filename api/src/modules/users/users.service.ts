@@ -18,8 +18,8 @@ const toResponse = (user: UserWithRole): UserResponseDto => ({
   namaLengkap: user.namaLengkap,
   email: user.email,
   nomorHp: user.nomorHp,
-  unitOrganisasiId: user.unitOrganisasiId,
-  asnId: user.asnId,
+  unitOrganisasiId: user.unitOrganisasiId?.toString() ?? null,
+  asnId: user.asnId?.toString() ?? null,
   roleId: user.roleId.toString(),
   roleNama: user.role.nama,
   isActive: user.isActive,
@@ -60,7 +60,7 @@ export const usersService = {
       where.roleId = BigInt(query.roleId)
     }
     if (typeof query.unitOrganisasiId === 'string' && query.unitOrganisasiId) {
-      where.unitOrganisasiId = query.unitOrganisasiId
+      where.unitOrganisasiId = BigInt(query.unitOrganisasiId)
     }
     if (typeof query.isActive === 'string') {
       where.isActive = query.isActive === 'true'
@@ -134,8 +134,8 @@ export const usersService = {
       namaLengkap: current.namaLengkap,
       email: current.email,
       nomorHp: current.nomorHp,
-      unitOrganisasiId: current.unitOrganisasiId,
-      asnId: current.asnId,
+      unitOrganisasiId: current.unitOrganisasiId?.toString() ?? null,
+      asnId: current.asnId?.toString() ?? null,
       roleId: current.roleId.toString(),
       isActive: current.isActive,
     }

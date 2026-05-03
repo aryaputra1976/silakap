@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import { Prisma, StatusApproval } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
@@ -9,6 +8,14 @@ import { StatusPegawai } from '@/shared/enums'
 import { asnRepository } from './asn.repository'
 import type { AsnListQuery } from './asn.types'
 import type { ApprovePeremajaanDto, CreateAsnDto, CreatePeremajaanDto, UpdateAsnDto } from './dto/asn.dto'
+
+const toBigIntId = (value: string): bigint => {
+  try {
+    return BigInt(value)
+  } catch {
+    throw new AppError('Data tidak ditemukan', 404)
+  }
+}
 
 const audit = async (
   actor: Express.Request['user'],
@@ -51,9 +58,7 @@ const allowedPeremajaanFields = new Set([
   'mkTahun',
   'mkBulan',
   'jenisJabatanId',
-  'jabatanStrukturaId',
-  'jabatanFungsionalId',
-  'jabatanPelaksanaId',
+  'jabatanId',
   'tmtJabatan',
   'tingkatPendidikanId',
   'bidangPendidikanId',
@@ -74,6 +79,47 @@ const sanitizePeremajaanData = (data: Record<string, unknown>): Prisma.AsnUnchec
 }
 
 export const asnService = {
+  async stats() {
+    const baseWhere: Prisma.AsnWhereInput = { deletedAt: null }
+    const pnsWhere: Prisma.AsnWhereInput = {
+      ...baseWhere,
+      statusAsn: {
+        is: {
+          OR: [{ kode: 'PNS' }, { nama: 'PNS' }],
+        },
+      },
+    }
+    const pppkBaseWhere: Prisma.AsnWhereInput = {
+      OR: [
+        { statusAsn: { is: { OR: [{ kode: { contains: 'PPPK' } }, { nama: { contains: 'PPPK' } }] } } },
+        { jenisPegawai: { is: { OR: [{ kode: { contains: 'PPPK' } }, { nama: { contains: 'PPPK' } }] } } },
+      ],
+    }
+    const paruhWaktuWhere: Prisma.AsnWhereInput = {
+      OR: [
+        { statusAsn: { is: { OR: [{ kode: { contains: 'PARUH' } }, { nama: { contains: 'Paruh' } }] } } },
+        { jenisPegawai: { is: { OR: [{ kode: { contains: 'PARUH' } }, { nama: { contains: 'Paruh' } }] } } },
+      ],
+    }
+    const pppkWhere: Prisma.AsnWhereInput = {
+      ...baseWhere,
+      AND: [pppkBaseWhere, { NOT: paruhWaktuWhere }],
+    }
+    const pppkParuhWaktuWhere: Prisma.AsnWhereInput = {
+      ...baseWhere,
+      AND: [paruhWaktuWhere],
+    }
+
+    const [total, pns, pppk, pppkParuhWaktu] = await Promise.all([
+      db.asn.count({ where: baseWhere }),
+      db.asn.count({ where: pnsWhere }),
+      db.asn.count({ where: pppkWhere }),
+      db.asn.count({ where: pppkParuhWaktuWhere }),
+    ])
+
+    return { total, pns, pppk, pppkParuhWaktu }
+  },
+
   async list(query: AsnListQuery) {
     const { page, limit, skip } = getPaginationParams(query)
     const where: Prisma.AsnWhereInput = { deletedAt: null }
@@ -82,9 +128,7 @@ export const asnService = {
       const search = query.search.trim()
       where.OR = [{ nama: { contains: search } }, { nipBaru: { contains: search } }]
     }
-    if (typeof query.unitOrganisasiId === 'string' && query.unitOrganisasiId) {
-      where.unitOrganisasiId = query.unitOrganisasiId
-    }
+    if (typeof query.unitOrganisasiId === 'string' && query.unitOrganisasiId) where.unitOrganisasiId = toBigIntId(query.unitOrganisasiId)
     if (query.golonganId) where.golonganId = BigInt(String(query.golonganId))
     if (query.jenisJabatanId) where.jenisJabatanId = BigInt(String(query.jenisJabatanId))
     if (typeof query.statusPegawai === 'string' && query.statusPegawai in StatusPegawai) {
@@ -109,8 +153,8 @@ export const asnService = {
     const duplicate = await asnRepository.findByNip(dto.nipBaru)
     if (duplicate) throw new AppError('NIP sudah terdaftar', 409)
 
-    const result = await asnRepository.create(crypto.randomUUID(), dto)
-    await audit(actor, 'CREATE_ASN', result.id, { nipBaru: result.nipBaru, nama: result.nama })
+    const result = await asnRepository.create(dto as Prisma.AsnUncheckedCreateInput)
+    await audit(actor, 'CREATE_ASN', result.id.toString(), { nipBaru: result.nipBaru, nama: result.nama })
     return result
   },
 
@@ -123,8 +167,8 @@ export const asnService = {
       if (duplicate) throw new AppError('NIP sudah terdaftar', 409)
     }
 
-    const result = await asnRepository.update(id, dto)
-    await audit(actor, 'UPDATE_ASN', result.id, { nipBaru: result.nipBaru, nama: result.nama })
+    const result = await asnRepository.update(id, dto as Prisma.AsnUncheckedUpdateInput)
+    await audit(actor, 'UPDATE_ASN', result.id.toString(), { nipBaru: result.nipBaru, nama: result.nama })
     return result
   },
 
@@ -141,7 +185,7 @@ export const asnService = {
     if (!existing) throw new AppError('Data tidak ditemukan', 404)
 
     return db.asnRiwayat.findMany({
-      where: { asnId: id },
+      where: { asnId: toBigIntId(id) },
       orderBy: { createdAt: 'desc' },
     })
   },
@@ -186,7 +230,7 @@ export const asnService = {
 
     const result = await db.asnPeremajaan.create({
       data: {
-        asnId: dto.asnId,
+        asnId: toBigIntId(dto.asnId),
         jenisPerubahan: dto.jenisPerubahan,
         dataLama: dataLama as Prisma.InputJsonObject,
         dataBaru: sanitized as Prisma.InputJsonObject,
@@ -250,7 +294,7 @@ export const asnService = {
       isi: `Pengajuan peremajaan data ASN ${existing.asn.nama} telah ${approved ? 'disetujui' : 'ditolak'}.`,
       link: '/asn/peremajaan',
     })
-    await audit(actor, approved ? 'APPROVE_PEREMAJAAN_ASN' : 'REJECT_PEREMAJAAN_ASN', existing.asnId, {
+    await audit(actor, approved ? 'APPROVE_PEREMAJAAN_ASN' : 'REJECT_PEREMAJAAN_ASN', existing.asnId.toString(), {
       peremajaanId: id,
     })
     return result

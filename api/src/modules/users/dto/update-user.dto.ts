@@ -5,8 +5,8 @@ export const updateUserSchema = z.object({
   email: z.string().email().optional(),
   nomorHp: z.string().optional(),
   roleId: z.coerce.bigint().positive().optional(),
-  unitOrganisasiId: z.string().uuid().nullable().optional(),
-  asnId: z.string().uuid().nullable().optional(),
+  unitOrganisasiId: z.coerce.bigint().nullable().optional(),
+  asnId: z.coerce.bigint().nullable().optional(),
   isActive: z.boolean().optional(),
 })
 

@@ -181,7 +181,7 @@ export const layananService = {
 
     if (userRoleName === ROLES.PENGELOLA_OPD) {
       const user = await db.user.findUnique({ where: { id: userId }, select: { unitOrganisasiId: true } })
-      where.unitOrganisasiId = user?.unitOrganisasiId ?? ''
+      where.unitOrganisasiId = user?.unitOrganisasiId ?? BigInt(0)
     }
     if (typeof query.status === 'string' && query.status in StatusUsulan) {
       where.status = query.status as StatusUsulan

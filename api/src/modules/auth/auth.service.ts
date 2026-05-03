@@ -40,7 +40,7 @@ const toAuthUser = (user: UserWithRole): AuthUserResponseDto => ({
     id: user.roleId.toString(),
     nama: user.role.nama,
   },
-  unitOrganisasiId: user.unitOrganisasiId ?? undefined,
+  unitOrganisasiId: user.unitOrganisasiId?.toString(),
   mustChangePassword: user.mustChangePassword,
 })
 
@@ -117,7 +117,8 @@ export const authService = {
     })
     if (!asn) throw new AppError('Data ASN aktif dengan NIP ini tidak ditemukan', 404)
 
-    const unit = await db.refUnitOrganisasi.findUnique({ where: { id: dto.unitOrganisasiId } })
+    const unitOrganisasiId = BigInt(dto.unitOrganisasiId)
+    const unit = await db.refUnitOrganisasi.findUnique({ where: { id: unitOrganisasiId } })
     if (!unit) throw new AppError('Unit organisasi tidak ditemukan', 404)
 
     const role = await db.role.findFirst({ where: { nama: ROLES.PENGELOLA_OPD, deletedAt: null } })
@@ -149,7 +150,7 @@ export const authService = {
           namaLengkap: asn.nama,
           email: dto.email,
           nomorHp: dto.nomorHp,
-          unitOrganisasiId: dto.unitOrganisasiId,
+          unitOrganisasiId,
           asnId: asn.id,
           roleId: role.id,
           isActive: false,
@@ -173,7 +174,7 @@ export const authService = {
             username: registeredUser.username,
             email: registeredUser.email,
             roleId: registeredUser.roleId.toString(),
-            unitOrganisasiId: registeredUser.unitOrganisasiId,
+            unitOrganisasiId: registeredUser.unitOrganisasiId?.toString() ?? null,
             isActive: registeredUser.isActive,
           },
         },
@@ -189,7 +190,7 @@ export const authService = {
       email: user.email,
       nomorHp: user.nomorHp,
       roleNama: user.role.nama,
-      unitOrganisasiId: user.unitOrganisasiId,
+      unitOrganisasiId: user.unitOrganisasiId?.toString() ?? null,
       isActive: user.isActive,
     }
   },

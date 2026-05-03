@@ -2,8 +2,8 @@ import { z } from 'zod'
 
 export const createUsulanSchema = z.object({
   jenisLayananId: z.coerce.bigint(),
-  asnId: z.string().uuid(),
-  unitOrganisasiId: z.string().uuid(),
+  asnId: z.coerce.bigint(),
+  unitOrganisasiId: z.coerce.bigint(),
   tanggalUsulan: z.coerce.date(),
 })
 

@@ -38,17 +38,26 @@ async function main(): Promise<void> {
 
   const agama = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Budha', 'Konghucu']
   for (const [index, nama] of agama.entries()) {
-    await db.refAgama.upsert({ where: { id: index + 1 }, create: { id: index + 1, nama }, update: {} })
+    const kode = String(index + 1)
+    await db.refAgama.upsert({ where: { kode }, create: { kode, nama }, update: {} })
   }
 
-  const jenisKelamin = ['Laki-laki', 'Perempuan']
-  for (const [index, nama] of jenisKelamin.entries()) {
-    await db.refJenisKelamin.upsert({ where: { id: index + 1 }, create: { id: index + 1, nama }, update: {} })
+  const jenisKelamin = [
+    { kode: 'M', nama: 'Laki-laki' },
+    { kode: 'F', nama: 'Perempuan' },
+  ]
+  for (const item of jenisKelamin) {
+    await db.refJenisKelamin.upsert({ where: { kode: item.kode }, create: item, update: { nama: item.nama } })
   }
 
   const statusKawin = ['Kawin', 'Belum Kawin', 'Janda/Duda']
   for (const [index, nama] of statusKawin.entries()) {
-    await db.refStatusKawin.upsert({ where: { id: index + 1 }, create: { id: index + 1, nama }, update: {} })
+    const kode = String(index + 1)
+    await db.refStatusPerkawinan.upsert({ where: { kode }, create: { kode, nama }, update: { nama } })
+  }
+
+  for (const kode of ['CPNS', 'PNS', 'PPPK']) {
+    await db.refStatusAsn.upsert({ where: { kode }, create: { kode, nama: kode }, update: {} })
   }
 
   const pendidikan = ['SD', 'SMP', 'SMA/SMK', 'D3', 'D4', 'S1', 'S2', 'S3']
@@ -90,9 +99,10 @@ async function main(): Promise<void> {
   }
 
   await db.refUnitOrganisasi.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000001' },
+    where: { idSiasn: '00000000-0000-0000-0000-000000000001' },
     create: {
-      id: '00000000-0000-0000-0000-000000000001',
+      idSiasn: '00000000-0000-0000-0000-000000000001',
+      kode: 'BKPSDM',
       nama: 'Badan Kepegawaian dan Pengembangan SDM',
       level: 1,
       isOpd: true,
@@ -100,9 +110,10 @@ async function main(): Promise<void> {
     update: {},
   })
   await db.refUnitOrganisasi.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000002' },
+    where: { idSiasn: '00000000-0000-0000-0000-000000000002' },
     create: {
-      id: '00000000-0000-0000-0000-000000000002',
+      idSiasn: '00000000-0000-0000-0000-000000000002',
+      kode: 'DISDIK',
       nama: 'Dinas Pendidikan',
       level: 1,
       isOpd: true,
@@ -110,9 +121,10 @@ async function main(): Promise<void> {
     update: {},
   })
   await db.refUnitOrganisasi.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000003' },
+    where: { idSiasn: '00000000-0000-0000-0000-000000000003' },
     create: {
-      id: '00000000-0000-0000-0000-000000000003',
+      idSiasn: '00000000-0000-0000-0000-000000000003',
+      kode: 'DINKES',
       nama: 'Dinas Kesehatan',
       level: 1,
       isOpd: true,
