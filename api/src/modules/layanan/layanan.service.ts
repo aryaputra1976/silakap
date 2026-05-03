@@ -19,6 +19,7 @@ import type {
   UploadDokumenDto,
 } from './dto/layanan.dto'
 import { buatSlaTracker, tutupSlaTracker } from './engine/sla.engine'
+import { workflowService } from '@/modules/workflow/workflow.service'
 import { logWorkflow } from './engine/workflow.engine'
 
 type Actor = Express.Request['user']
@@ -181,7 +182,11 @@ export const layananService = {
 
     if (userRoleName === ROLES.PENGELOLA_OPD) {
       const user = await db.user.findUnique({ where: { id: userId }, select: { unitOrganisasiId: true } })
-      where.unitOrganisasiId = user?.unitOrganisasiId ?? BigInt(0)
+      if (user?.unitOrganisasiId) {
+        where.unitOrganisasiId = user.unitOrganisasiId
+      } else {
+        where.id = '__NO_ACCESS__'
+      }
     }
     if (typeof query.status === 'string' && query.status in StatusUsulan) {
       where.status = query.status as StatusUsulan
@@ -238,9 +243,9 @@ export const layananService = {
       data: {
         id: randomUUID(),
         nomorUsulan,
-        jenisLayananId: dto.jenisLayananId,
-        asnId: dto.asnId,
-        unitOrganisasiId: dto.unitOrganisasiId,
+        jenisLayananId: BigInt(dto.jenisLayananId),
+        asnId: BigInt(dto.asnId),
+        unitOrganisasiId: BigInt(dto.unitOrganisasiId),
         diajukanOlehId: actor?.id,
         tanggalUsulan: dto.tanggalUsulan,
         status: StatusUsulan.Draft,
@@ -323,19 +328,17 @@ export const layananService = {
 
   async teruskan(id: string, catatan: TeruskanDto['catatan'], actor: Actor) {
     const usulan = await requireUsulan(id)
-    if (!usulan.tahapSaatIni) throw new AppError('Tahap usulan tidak valid', 422)
-    const currentTahap = usulan.tahapSaatIni
-    assertRole(actor, roleByTahap[currentTahap])
 
-    const nextTahapByCurrent: Partial<Record<TahapUsulan, TahapUsulan>> = {
-      [TahapUsulan.AP]: TahapUsulan.AM,
-      [TahapUsulan.AM]: TahapUsulan.AD,
-      [TahapUsulan.AD]: TahapUsulan.Kabid,
+    if (!usulan.tahapSaatIni) {
+      throw new AppError('Tahap usulan tidak valid', 422)
     }
-    const nextTahap = nextTahapByCurrent[currentTahap]
-    if (!nextTahap || usulan.status !== statusByTahap[currentTahap]) {
-      throw new AppError('Usulan tidak dapat diteruskan dari tahap saat ini', 422)
-    }
+
+    const currentTahap = usulan.tahapSaatIni
+
+    workflowService.assertRoleCanHandleTahap(actor?.roleName, currentTahap)
+    workflowService.assertStatusMatchesTahap(usulan.status, currentTahap)
+
+    const nextTahap = workflowService.resolveNextTahap(currentTahap)
 
     const result = await db.$transaction(async (tx) => {
       const updateData: Prisma.UsulanLayananUncheckedUpdateInput = {
@@ -344,74 +347,92 @@ export const layananService = {
         [masukFieldByTahap[nextTahap]]: new Date(),
         [catatanFieldByTahap[currentTahap]]: catatan,
       }
-      const updated = await tx.usulanLayanan.update({ where: { id }, data: updateData })
+
+      const updated = await tx.usulanLayanan.update({
+        where: { id },
+        data: updateData,
+      })
+
       await tutupSlaTracker(id, currentTahap, tx)
       await buatSlaTracker(id, nextTahap, usulan.jenisLayananId, tx)
       await logWorkflow(id, currentTahap, nextTahap, 'TERUSKAN', actor?.id, catatan, tx)
+
       return updated
     })
 
-    if (nextTahap === TahapUsulan.AM) await sendToRole(ROLES.ANALIS_MUDA, 'Berkas Siap Diverifikasi', id)
-    if (nextTahap === TahapUsulan.AD) await sendToRole(ROLES.ANALIS_MADYA, 'Berkas Siap Quality Control', id)
-    if (nextTahap === TahapUsulan.Kabid) await sendToRole(ROLES.KABID, 'Berkas Menunggu Persetujuan', id)
+    await sendToRole(roleByTahap[nextTahap], 'Berkas Siap Ditindaklanjuti', id)
+
     return result
   },
 
   async kembalikan(id: string, alasan: KembalikanDto['alasan'], actor: Actor) {
     const usulan = await requireUsulan(id)
-    if (!usulan.tahapSaatIni) throw new AppError('Tahap usulan tidak valid', 422)
-    assertRole(actor, roleByTahap[usulan.tahapSaatIni])
 
-    const previousTahapByCurrent: Partial<Record<TahapUsulan, TahapUsulan>> = {
-      [TahapUsulan.AP]: TahapUsulan.AP,
-      [TahapUsulan.AM]: TahapUsulan.AP,
-      [TahapUsulan.AD]: TahapUsulan.AM,
-      [TahapUsulan.Kabid]: TahapUsulan.AD,
-      [TahapUsulan.KepalaBadan]: TahapUsulan.Kabid,
+    if (!usulan.tahapSaatIni) {
+      throw new AppError('Tahap usulan tidak valid', 422)
     }
-    const previousTahap = previousTahapByCurrent[usulan.tahapSaatIni]
-    if (!previousTahap || usulan.status !== statusByTahap[usulan.tahapSaatIni]) {
-      throw new AppError('Usulan tidak dapat dikembalikan dari tahap saat ini', 422)
-    }
+
+    const currentTahap = usulan.tahapSaatIni
+
+    workflowService.assertRoleCanHandleTahap(actor?.roleName, currentTahap)
+    workflowService.assertStatusMatchesTahap(usulan.status, currentTahap)
+
+    const previousTahap = workflowService.resolvePreviousTahap(currentTahap)
     const nomorRevisi = await nextRevisionNumber(id)
 
     const result = await db.$transaction(async (tx) => {
       const updated = await tx.usulanLayanan.update({
         where: { id },
-        data: { status: StatusUsulan.Dikembalikan, tahapSaatIni: previousTahap, alasanPenolakan: alasan },
+        data: {
+          status: StatusUsulan.Dikembalikan,
+          tahapSaatIni: previousTahap,
+          alasanPenolakan: alasan,
+        },
       })
-      await tutupSlaTracker(id, usulan.tahapSaatIni!, tx)
+
+      await tutupSlaTracker(id, currentTahap, tx)
+
       await tx.usulanRevisi.create({
         data: {
           usulanId: id,
           nomorRevisi,
-          dariTahap: usulan.tahapSaatIni!,
+          dariTahap: currentTahap,
           keTahap: previousTahap,
           alasanDikembalikan: alasan,
           dikembalikanOlehId: actor!.id,
         },
       })
-      await logWorkflow(id, usulan.tahapSaatIni, previousTahap, 'KEMBALIKAN', actor?.id, alasan, tx)
+
+      await logWorkflow(id, currentTahap, previousTahap, 'KEMBALIKAN', actor?.id, alasan, tx)
+
       return updated
     })
 
     await sendToSubmitter(usulan, 'Usulan Dikembalikan untuk Perbaikan', id)
+
     return result
   },
 
   async setujui(id: string, catatan: SetujuiDto['catatan'], actor: Actor) {
     const usulan = await requireUsulan(id)
-    if (!usulan.tahapSaatIni) throw new AppError('Tahap usulan tidak valid', 422)
-    assertRole(actor, roleByTahap[usulan.tahapSaatIni])
 
-    if (usulan.tahapSaatIni !== TahapUsulan.Kabid && usulan.tahapSaatIni !== TahapUsulan.KepalaBadan) {
+    if (!usulan.tahapSaatIni) {
+      throw new AppError('Tahap usulan tidak valid', 422)
+    }
+
+    const currentTahap = usulan.tahapSaatIni
+
+    workflowService.assertRoleCanHandleTahap(actor?.roleName, currentTahap)
+    workflowService.assertStatusMatchesTahap(usulan.status, currentTahap)
+
+    if (currentTahap !== TahapUsulan.Kabid && currentTahap !== TahapUsulan.KepalaBadan) {
       throw new AppError('Usulan tidak berada pada tahap persetujuan', 422)
     }
-    if (usulan.status !== statusByTahap[usulan.tahapSaatIni]) {
-      throw new AppError('Status usulan tidak valid untuk disetujui', 422)
-    }
 
-    const needsKepala = usulan.tahapSaatIni === TahapUsulan.Kabid && usulan.jenisLayanan.butuhTteKepalaBadan
+    const needsKepala =
+      currentTahap === TahapUsulan.Kabid &&
+      usulan.jenisLayanan.butuhTteKepalaBadan
+
     const nextTahap = needsKepala ? TahapUsulan.KepalaBadan : null
 
     const result = await db.$transaction(async (tx) => {
@@ -420,26 +441,38 @@ export const layananService = {
             status: StatusUsulan.ApprovalKepalaBadan,
             tahapSaatIni: nextTahap,
             tglMasukKepalaBadan: new Date(),
-            [catatanFieldByTahap[usulan.tahapSaatIni!]]: catatan,
+            [catatanFieldByTahap[currentTahap]]: catatan,
           }
         : {
             status: StatusUsulan.Selesai,
-            tahapSaatIni: usulan.tahapSaatIni,
+            tahapSaatIni: currentTahap,
             tglSelesai: new Date(),
-            [catatanFieldByTahap[usulan.tahapSaatIni!]]: catatan,
+            [catatanFieldByTahap[currentTahap]]: catatan,
           }
-      const updated = await tx.usulanLayanan.update({ where: { id }, data: updateData })
-      await tutupSlaTracker(id, usulan.tahapSaatIni!, tx)
-      if (nextTahap) await buatSlaTracker(id, nextTahap, usulan.jenisLayananId, tx)
-      await logWorkflow(id, usulan.tahapSaatIni, nextTahap, 'SETUJUI', actor?.id, catatan, tx)
+
+      const updated = await tx.usulanLayanan.update({
+        where: { id },
+        data: updateData,
+      })
+
+      await tutupSlaTracker(id, currentTahap, tx)
+
+      if (nextTahap) {
+        await buatSlaTracker(id, nextTahap, usulan.jenisLayananId, tx)
+      }
+
+      await logWorkflow(id, currentTahap, nextTahap, 'SETUJUI', actor?.id, catatan, tx)
+
       return updated
     })
 
-    if (nextTahap) await sendToRole(ROLES.KEPALA_BADAN, 'Berkas Menunggu TTd', id)
-    else {
+    if (nextTahap) {
+      await sendToRole(ROLES.KEPALA_BADAN, 'Berkas Menunggu TTd', id)
+    } else {
       await ensureDokumenOutput(id, actor)
       await sendToSubmitter(usulan, 'Usulan Selesai', id)
     }
+
     return result
   },
 
@@ -496,17 +529,28 @@ export const layananService = {
 
   async resubmit(id: string, catatan: ResubmitDto['catatan'], actor: Actor) {
     assertRole(actor, ROLES.PENGELOLA_OPD)
+
     const usulan = await requireUsulan(id)
+
     if (usulan.status !== StatusUsulan.Dikembalikan || !usulan.tahapSaatIni) {
       throw new AppError('Usulan tidak sedang menunggu perbaikan', 422)
     }
 
     const revisi = await db.usulanRevisi.findFirst({
-      where: { usulanId: id, statusRevisi: 'Menunggu' },
+      where: {
+        usulanId: id,
+        statusRevisi: 'Menunggu',
+      },
       orderBy: { nomorRevisi: 'desc' },
     })
-    if (!revisi) throw new AppError('Data revisi tidak ditemukan', 404)
+
+    if (!revisi) {
+      throw new AppError('Data revisi tidak ditemukan', 404)
+    }
+
     const targetTahap = revisi.keTahap ?? usulan.tahapSaatIni
+
+    workflowService.assertStatusMatchesTahap(statusByTahap[targetTahap], targetTahap)
 
     const result = await db.$transaction(async (tx) => {
       const updated = await tx.usulanLayanan.update({
@@ -518,6 +562,7 @@ export const layananService = {
           [masukFieldByTahap[targetTahap]]: new Date(),
         },
       })
+
       await tx.usulanRevisi.update({
         where: { id: revisi.id },
         data: {
@@ -527,12 +572,15 @@ export const layananService = {
           resubmitOlehId: actor?.id,
         },
       })
+
       await buatSlaTracker(id, targetTahap, usulan.jenisLayananId, tx)
       await logWorkflow(id, null, targetTahap, 'RESUBMIT', actor?.id, catatan, tx)
+
       return updated
     })
 
     await sendToRole(roleByTahap[targetTahap], 'Usulan Telah Diperbaiki', id)
+
     return result
   },
 }

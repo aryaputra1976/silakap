@@ -1,29 +1,75 @@
-import { db } from '@/core/database/prisma.client'
+import { StatusUsulan, TahapUsulan } from '@prisma/client'
+import { AppError } from '@/core/errors/app-error'
+import { ROLES } from '@/shared/constants'
+
+export const statusByTahap: Record<TahapUsulan, StatusUsulan> = {
+  [TahapUsulan.AP]: StatusUsulan.VerifikasiAP,
+  [TahapUsulan.AM]: StatusUsulan.VerifikasiAM,
+  [TahapUsulan.AD]: StatusUsulan.QualityControl,
+  [TahapUsulan.Kabid]: StatusUsulan.ApprovalKabid,
+  [TahapUsulan.KepalaBadan]: StatusUsulan.ApprovalKepalaBadan,
+}
+
+export const roleByTahap: Record<TahapUsulan, string> = {
+  [TahapUsulan.AP]: ROLES.ANALIS_PERTAMA,
+  [TahapUsulan.AM]: ROLES.ANALIS_MUDA,
+  [TahapUsulan.AD]: ROLES.ANALIS_MADYA,
+  [TahapUsulan.Kabid]: ROLES.KABID,
+  [TahapUsulan.KepalaBadan]: ROLES.KEPALA_BADAN,
+}
+
+export const nextTahapByCurrent: Partial<Record<TahapUsulan, TahapUsulan>> = {
+  [TahapUsulan.AP]: TahapUsulan.AM,
+  [TahapUsulan.AM]: TahapUsulan.AD,
+  [TahapUsulan.AD]: TahapUsulan.Kabid,
+}
+
+export const previousTahapByCurrent: Partial<Record<TahapUsulan, TahapUsulan>> = {
+  [TahapUsulan.AP]: TahapUsulan.AP,
+  [TahapUsulan.AM]: TahapUsulan.AP,
+  [TahapUsulan.AD]: TahapUsulan.AM,
+  [TahapUsulan.Kabid]: TahapUsulan.AD,
+  [TahapUsulan.KepalaBadan]: TahapUsulan.Kabid,
+}
 
 export const workflowService = {
-  history(usulanId: string) {
-    return db.usulanWorkflowLog.findMany({
-      where: { usulanLayananId: usulanId },
-      include: { dilakukanOleh: { select: { id: true, namaLengkap: true } } },
-      orderBy: { createdAt: 'asc' },
-    })
+  assertTahapValid(tahap: TahapUsulan | null): asserts tahap is TahapUsulan {
+    if (!tahap) {
+      throw new AppError('Tahap usulan tidak valid', 422)
+    }
   },
 
-  slaStatus(usulanId: string) {
-    return db.slaTracker.findMany({
-      where: { usulanId },
-      orderBy: { masukTahap: 'asc' },
-    })
+  assertRoleCanHandleTahap(actorRoleName: string | undefined, tahap: TahapUsulan) {
+    const requiredRole = roleByTahap[tahap]
+
+    if (!actorRoleName || actorRoleName !== requiredRole) {
+      throw new AppError('Anda tidak memiliki akses ke tahap ini', 403)
+    }
   },
 
-  revisi(usulanId: string) {
-    return db.usulanRevisi.findMany({
-      where: { usulanId },
-      include: {
-        dikembalikanOleh: { select: { id: true, namaLengkap: true } },
-        resubmitOleh: { select: { id: true, namaLengkap: true } },
-      },
-      orderBy: { nomorRevisi: 'asc' },
-    })
+  assertStatusMatchesTahap(status: StatusUsulan, tahap: TahapUsulan) {
+    if (status !== statusByTahap[tahap]) {
+      throw new AppError('Status usulan tidak sesuai dengan tahap saat ini', 422)
+    }
+  },
+
+  resolveNextTahap(currentTahap: TahapUsulan) {
+    const nextTahap = nextTahapByCurrent[currentTahap]
+
+    if (!nextTahap) {
+      throw new AppError('Usulan tidak dapat diteruskan dari tahap saat ini', 422)
+    }
+
+    return nextTahap
+  },
+
+  resolvePreviousTahap(currentTahap: TahapUsulan) {
+    const previousTahap = previousTahapByCurrent[currentTahap]
+
+    if (!previousTahap) {
+      throw new AppError('Usulan tidak dapat dikembalikan dari tahap saat ini', 422)
+    }
+
+    return previousTahap
   },
 }

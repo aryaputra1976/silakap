@@ -1,11 +1,11 @@
 import type { NextFunction, Request, Response } from 'express'
 import { sendSuccess } from '@/core/http/response.helper'
-import { workflowService } from './workflow.service'
+import { workflowQueryService } from './workflow.query.service'
 
 export const workflowController = {
   history: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await workflowService.history(req.params.usulanId))
+      sendSuccess(res, await workflowQueryService.history(req.params.usulanId))
     } catch (error) {
       next(error)
     }
@@ -13,7 +13,7 @@ export const workflowController = {
 
   slaStatus: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await workflowService.slaStatus(req.params.usulanId))
+      sendSuccess(res, await workflowQueryService.slaStatus(req.params.usulanId))
     } catch (error) {
       next(error)
     }
@@ -21,7 +21,7 @@ export const workflowController = {
 
   revisi: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await workflowService.revisi(req.params.usulanId))
+      sendSuccess(res, await workflowQueryService.revisi(req.params.usulanId))
     } catch (error) {
       next(error)
     }
