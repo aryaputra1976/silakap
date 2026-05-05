@@ -169,3 +169,54 @@ export const useRankingOpd = (limit = 10) =>
       return data.data;
     },
   });
+
+// ─── Enterprise Dashboard hooks ─────────────────────────────────────────────
+
+export interface DashboardSummary {
+  totalUsulan: number;
+  byStatus: Record<string, number>;
+  byTahap: Record<string, number>;
+  sla: { total: number; overdue: number; selesai: number };
+}
+
+export interface RecentUsulanItem {
+  id: string;
+  nomorUsulan: string;
+  status: string;
+  tahapSaatIni: string | null;
+  tanggalUsulan: string;
+  createdAt: string;
+  asn: { nama: string; nipBaru: string } | null;
+  jenisLayanan: { nama: string } | null;
+  unitOrganisasi?: { nama: string } | null;
+}
+
+export const useDashboardSummary = () =>
+  useQuery({
+    queryKey: ["dashboard", "summary"],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: DashboardSummary }>("/dashboard/summary");
+      return data.data;
+    },
+  });
+
+export const useDashboardTrend = (days = 7) =>
+  useQuery({
+    queryKey: ["dashboard", "trend", days],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: Record<string, number> }>(
+        "/dashboard/trend",
+        { params: { days } },
+      );
+      return data.data;
+    },
+  });
+
+export const useDashboardRecent = () =>
+  useQuery({
+    queryKey: ["dashboard", "recent"],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: RecentUsulanItem[] }>("/dashboard/recent");
+      return data.data;
+    },
+  });

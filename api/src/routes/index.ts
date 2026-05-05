@@ -19,6 +19,8 @@ import {
   usersRoutes,
   workflowRoutes,
 } from '@/modules'
+import { reportingRoutes } from '@/modules/reporting/reporting.routes'
+import { insightsRoutes } from '@/modules/insights/insights.routes'
 
 export const router = Router()
 
@@ -39,3 +41,5 @@ router.use('/audit', authenticate, auditRoutes)
 router.use('/ai', authenticate, aiRoutes)
 router.use('/perencanaan', authenticate, perencanaanRoutes)
 router.use('/arsip', authenticate, arsipRoutes)
+router.use('/reporting', authenticate, reportingRoutes)
+router.use('/insights', authenticate, insightsRoutes)

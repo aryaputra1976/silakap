@@ -9,6 +9,10 @@ import { AppError } from '@/core/errors/app-error'
 import { getPaginationParams, buildMeta } from '@/core/http/pagination.helper'
 import { db } from '@/core/database/prisma.client'
 import { logWorkflow } from './engine/workflow.engine'
+import { workflowDecision } from '@/modules/workflow/workflow.decision'
+import { tutupSlaTracker } from './engine/sla.engine'
+import { buatSlaTracker } from './engine/sla.engine'
+import { notificationEngine } from './engine/notification.engine'
 
 type Actor = {
   id: string
@@ -90,29 +94,41 @@ export const layananService = {
     })
   },
 
-  async teruskan(id: string, catatan: string, actor: Actor) {
-    const usulan = await layananRepository.findByIdOrThrow(id)
+async teruskan(id: string, catatan: string, actor: Actor) {
+  const usulan = await layananRepository.findByIdOrThrow(id)
+  const current = usulan.tahapSaatIni
 
-    const current = usulan.tahapSaatIni
-    if (!current) throw new AppError('Tahap invalid', 422)
+  if (!current) throw new AppError('Tahap invalid', 422)
 
-    layananAccessPolicy.canProcess(actor.roleName, current)
+  layananAccessPolicy.canProcess(actor.roleName, current)
 
-    const next = workflowService.resolveNextTahap(current)
+  const decision = workflowDecision.forward(current)
 
-    return db.$transaction(async (tx) => {
-      const updated = await tx.usulanLayanan.update({
-        where: { id },
-        data: {
-          tahapSaatIni: next,
-          status: workflowService.statusByTahap[next],
-        },
-      })
-
-      await logWorkflow(id, current, next, 'TERUSKAN', actor.id, catatan, tx)
-      return updated
+  return db.$transaction(async (tx) => {
+    const updated = await tx.usulanLayanan.update({
+      where: { id },
+      data: {
+        tahapSaatIni: decision.to,
+        status: decision.status,
+      },
     })
-  },
+
+    if (decision.closeSla) {
+      await tutupSlaTracker(id, current, tx)
+    }
+
+    if (decision.openSla && decision.to) {
+      await buatSlaTracker(id, decision.to, usulan.jenisLayananId, tx)
+    }
+
+    await logWorkflow(id, decision.from, decision.to, 'TERUSKAN', actor.id, catatan, tx)
+
+    // 🔥 NOTIFICATION
+    await notificationEngine.notifyNextRole(actor.roleName, `Usulan ${id} masuk ke tahap berikutnya`)
+
+    return updated
+  })
+},
 
   async kembalikan(id: string, alasan: string, actor: Actor) {
     const usulan = await layananRepository.findByIdOrThrow(id)

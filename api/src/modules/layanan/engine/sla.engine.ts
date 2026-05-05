@@ -1,7 +1,8 @@
 import { db } from '@/core/database/prisma.client'
-import { TahapUsulan } from '@prisma/client'
+import { TahapUsulan, StatusSla } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 
-const TAHAP_TO_JABATAN: Record<TahapUsulan, string> = {
+const TAHAP_TO_JABATAN: Partial<Record<TahapUsulan, string>> = {
   AP: 'AP',
   AM: 'AM',
   AD: 'AD',
@@ -9,64 +10,60 @@ const TAHAP_TO_JABATAN: Record<TahapUsulan, string> = {
   KepalaBadan: 'KepalaBadan',
 }
 
-export const slaEngine = {
-  async open(usulanId: string, tahap: TahapUsulan, jenisLayananId: bigint, tx = db) {
-    const jabatan = TAHAP_TO_JABATAN[tahap]
+export async function buatSlaTracker(
+  usulanId: string,
+  tahap: TahapUsulan,
+  jenisLayananId: bigint,
+  client: Prisma.TransactionClient = db,
+): Promise<void> {
+  const jabatan = TAHAP_TO_JABATAN[tahap]
+  if (!jabatan) return
 
-    const config =
-      (await tx.configSla.findFirst({ where: { jenisLayananId, jabatan } })) ??
-      (await tx.configSla.findFirst({ where: { jenisLayananId: null, jabatan } }))
+  const config =
+    (await client.configSla.findFirst({ where: { jenisLayananId, jabatan } })) ??
+    (await client.configSla.findFirst({ where: { jenisLayananId: null, jabatan } }))
 
-    const slaHari = config?.slaHari ?? 1
-    const slaJam = config?.slaJam ?? 0
+  const slaHari = config?.slaHari ?? 1
+  const slaJam = config?.slaJam ?? 0
 
-    const now = new Date()
-    const due = new Date(now)
-    due.setDate(due.getDate() + slaHari)
-    due.setHours(due.getHours() + slaJam)
+  const masuk = new Date()
+  const slaHabisAt = new Date(masuk)
+  slaHabisAt.setDate(slaHabisAt.getDate() + slaHari)
+  slaHabisAt.setHours(slaHabisAt.getHours() + slaJam)
 
-    await tx.slaTracker.create({
-      data: {
-        usulanId,
-        tahapSaat: tahap,
-        masukTahap: now,
-        slaHari,
-        slaJam,
-        slaHabisAt: due,
-      },
-    })
-  },
+  await client.slaTracker.create({
+    data: {
+      usulanId,
+      tahapSaat: tahap,
+      masukTahap: masuk,
+      slaHari,
+      slaJam,
+      slaHabisAt,
+      statusSla: StatusSla.OK,
+    },
+  })
+}
 
-  async close(usulanId: string, tahap: TahapUsulan, tx = db) {
-    const tracker = await tx.slaTracker.findFirst({
-      where: { usulanId, tahapSaat: tahap, selesaiAt: null },
-    })
+export async function tutupSlaTracker(
+  usulanId: string,
+  tahap: TahapUsulan,
+  client: Prisma.TransactionClient = db,
+): Promise<void> {
+  const trackers = await client.slaTracker.findMany({
+    where: { usulanId, tahapSaat: tahap, selesaiAt: null },
+  })
 
-    if (!tracker) return
+  const now = new Date()
 
-    const now = new Date()
-    const overdue = now > tracker.slaHabisAt
+  for (const tracker of trackers) {
+    const overdue = tracker.slaHabisAt && now > tracker.slaHabisAt
 
-    await tx.slaTracker.update({
+    await client.slaTracker.update({
       where: { id: tracker.id },
       data: {
         selesaiAt: now,
-        statusSla: overdue ? 'Overdue' : 'OK',
+        statusSla: overdue ? StatusSla.Overdue : StatusSla.OK,
       },
     })
-  },
-
-  async checkOverdue() {
-    const now = new Date()
-
-    return db.slaTracker.updateMany({
-      where: {
-        selesaiAt: null,
-        slaHabisAt: { lt: now },
-      },
-      data: {
-        statusSla: 'Overdue',
-      },
-    })
-  },
+  }
 }

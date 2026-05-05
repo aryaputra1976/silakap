@@ -1,77 +1,112 @@
-import type { NextFunction, Request, Response } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import { sendSuccess } from '@/core/http/response.helper'
 import { dashboardService } from './dashboard.service'
 
 export const dashboardController = {
-  ringkasan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // ─── Enterprise Dashboard ────────────────────────────────────────────────
+
+  summary: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      sendSuccess(res, await dashboardService.ringkasan(req.user?.roleName ?? '', req.user?.unitOrganisasiId))
-    } catch (error) {
-      next(error)
+      sendSuccess(res, await dashboardService.summary())
+    } catch (e) {
+      next(e)
     }
   },
 
-  perJenisLayanan: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  recent: async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      sendSuccess(res, await dashboardService.recent())
+    } catch (e) {
+      next(e)
+    }
+  },
+
+  trend: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const days = Number(req.query.days ?? 7)
+      sendSuccess(res, await dashboardService.trend(days))
+    } catch (e) {
+      next(e)
+    }
+  },
+
+  // ─── Role-Based Dashboard (existing pages) ───────────────────────────────
+
+  ringkasan: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const unitOrganisasiId = req.query.unitOrganisasiId as string | undefined
+      sendSuccess(res, await dashboardService.ringkasan(unitOrganisasiId))
+    } catch (e) {
+      next(e)
+    }
+  },
+
+  perJenisLayanan: async (_req: Request, res: Response, next: NextFunction) => {
     try {
       sendSuccess(res, await dashboardService.perJenisLayanan())
-    } catch (error) {
-      next(error)
+    } catch (e) {
+      next(e)
     }
   },
 
-  antrianPerTahap: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  antrianPerTahap: async (_req: Request, res: Response, next: NextFunction) => {
     try {
       sendSuccess(res, await dashboardService.antrianPerTahap())
-    } catch (error) {
-      next(error)
+    } catch (e) {
+      next(e)
     }
   },
 
-  laporanHarianTerakhir: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  laporanHarian: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      sendSuccess(res, await dashboardService.laporanHarianTerakhir())
-    } catch (error) {
-      next(error)
+      sendSuccess(res, await dashboardService.laporanHarian())
+    } catch (e) {
+      next(e)
     }
   },
 
-  aktivitasTerkini: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  aktivitas: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      sendSuccess(res, await dashboardService.aktivitasTerkini())
-    } catch (error) {
-      next(error)
+      sendSuccess(res, await dashboardService.aktivitas())
+    } catch (e) {
+      next(e)
     }
   },
 
-  slaTrend: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // ─── Analytics ───────────────────────────────────────────────────────────
+
+  slaTrend: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      sendSuccess(res, await dashboardService.slaTrend(Number(req.query.days ?? 14)))
-    } catch (error) {
-      next(error)
+      const days = Number(req.query.days ?? 14)
+      sendSuccess(res, await dashboardService.slaTrend(days))
+    } catch (e) {
+      next(e)
     }
   },
 
-  throughput: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  throughput: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      sendSuccess(res, await dashboardService.throughput(Number(req.query.days ?? 30)))
-    } catch (error) {
-      next(error)
+      const days = Number(req.query.days ?? 30)
+      sendSuccess(res, await dashboardService.throughput(days))
+    } catch (e) {
+      next(e)
     }
   },
 
-  bottleneck: async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  bottleneck: async (_req: Request, res: Response, next: NextFunction) => {
     try {
       sendSuccess(res, await dashboardService.bottleneck())
-    } catch (error) {
-      next(error)
+    } catch (e) {
+      next(e)
     }
   },
 
-  rankingOpd: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  rankingOpd: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      sendSuccess(res, await dashboardService.rankingOpd(Number(req.query.limit ?? 10)))
-    } catch (error) {
-      next(error)
+      const limit = Number(req.query.limit ?? 10)
+      sendSuccess(res, await dashboardService.rankingOpd(limit))
+    } catch (e) {
+      next(e)
     }
   },
 }
