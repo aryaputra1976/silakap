@@ -33,6 +33,9 @@ export const previousTahapByCurrent: Partial<Record<TahapUsulan, TahapUsulan>> =
 }
 
 export const workflowService = {
+  statusByTahap,
+  roleByTahap,
+
   assertTahapValid(tahap: TahapUsulan | null): asserts tahap is TahapUsulan {
     if (!tahap) {
       throw new AppError('Tahap usulan tidak valid', 422)
@@ -41,7 +44,6 @@ export const workflowService = {
 
   assertRoleCanHandleTahap(actorRoleName: string | undefined, tahap: TahapUsulan) {
     const requiredRole = roleByTahap[tahap]
-
     if (!actorRoleName || actorRoleName !== requiredRole) {
       throw new AppError('Anda tidak memiliki akses ke tahap ini', 403)
     }
@@ -49,27 +51,23 @@ export const workflowService = {
 
   assertStatusMatchesTahap(status: StatusUsulan, tahap: TahapUsulan) {
     if (status !== statusByTahap[tahap]) {
-      throw new AppError('Status usulan tidak sesuai dengan tahap saat ini', 422)
+      throw new AppError('Status tidak sesuai tahap', 422)
     }
   },
 
-  resolveNextTahap(currentTahap: TahapUsulan) {
-    const nextTahap = nextTahapByCurrent[currentTahap]
-
-    if (!nextTahap) {
-      throw new AppError('Usulan tidak dapat diteruskan dari tahap saat ini', 422)
+  resolveNextTahap(current: TahapUsulan): TahapUsulan {
+    const next = nextTahapByCurrent[current]
+    if (!next) {
+      throw new AppError('Tidak bisa lanjut tahap', 422)
     }
-
-    return nextTahap
+    return next
   },
 
-  resolvePreviousTahap(currentTahap: TahapUsulan) {
-    const previousTahap = previousTahapByCurrent[currentTahap]
-
-    if (!previousTahap) {
-      throw new AppError('Usulan tidak dapat dikembalikan dari tahap saat ini', 422)
+  resolvePreviousTahap(current: TahapUsulan): TahapUsulan {
+    const prev = previousTahapByCurrent[current]
+    if (!prev) {
+      throw new AppError('Tidak bisa kembali tahap', 422)
     }
-
-    return previousTahap
+    return prev
   },
 }

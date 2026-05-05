@@ -2,11 +2,20 @@ import type { NextFunction, Request, Response } from 'express'
 import { sendCreated, sendPaginated, sendSuccess } from '@/core/http/response.helper'
 import { uploadDokumenSchema } from './dto/layanan.dto'
 import { layananService } from './layanan.service'
+import { AppError } from '@/core/errors/app-error'
+
+const requireUser = (req: Request) => {
+  if (!req.user) {
+    throw new AppError('Unauthorized', 401)
+  }
+  return req.user
+}
 
 export const layananController = {
   list: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await layananService.list(req.user!.id, req.user!.roleName, req.query)
+      const user = requireUser(req)
+      const result = await layananService.list(user.id, user.roleName, req.query)
       sendPaginated(res, result.data, result.meta)
     } catch (error) {
       next(error)
@@ -23,7 +32,8 @@ export const layananController = {
 
   dokumenOutput: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const dokumen = await layananService.dokumenOutput(req.params.id, req.user)
+      const user = requireUser(req)
+      const dokumen = await layananService.dokumenOutput(req.params.id, user)
       res.download(dokumen.pathFile, dokumen.namaFile)
     } catch (error) {
       next(error)
@@ -32,7 +42,8 @@ export const layananController = {
 
   create: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendCreated(res, await layananService.create(req.body, req.user), 'Usulan berhasil dibuat')
+      const user = requireUser(req)
+      sendCreated(res, await layananService.create(req.body, user), 'Usulan berhasil dibuat')
     } catch (error) {
       next(error)
     }
@@ -40,8 +51,13 @@ export const layananController = {
 
   uploadDokumen: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const user = requireUser(req)
       const parsed = uploadDokumenSchema.parse(req.body)
-      sendCreated(res, await layananService.uploadDokumen(req.params.id, req.file, parsed, req.user), 'Dokumen berhasil diunggah')
+      sendCreated(
+        res,
+        await layananService.uploadDokumen(req.params.id, req.file, parsed, user),
+        'Dokumen berhasil diunggah',
+      )
     } catch (error) {
       next(error)
     }
@@ -49,7 +65,8 @@ export const layananController = {
 
   submit: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.submit(req.params.id, req.user), 'Usulan berhasil diajukan')
+      const user = requireUser(req)
+      sendSuccess(res, await layananService.submit(req.params.id, user), 'Usulan berhasil diajukan')
     } catch (error) {
       next(error)
     }
@@ -57,7 +74,8 @@ export const layananController = {
 
   terima: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.terima(req.params.id, req.user), 'Usulan berhasil diterima')
+      const user = requireUser(req)
+      sendSuccess(res, await layananService.terima(req.params.id, user), 'Usulan berhasil diterima')
     } catch (error) {
       next(error)
     }
@@ -65,7 +83,12 @@ export const layananController = {
 
   teruskan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.teruskan(req.params.id, req.body.catatan, req.user), 'Usulan berhasil diteruskan')
+      const user = requireUser(req)
+      sendSuccess(
+        res,
+        await layananService.teruskan(req.params.id, req.body.catatan, user),
+        'Usulan berhasil diteruskan',
+      )
     } catch (error) {
       next(error)
     }
@@ -73,7 +96,12 @@ export const layananController = {
 
   kembalikan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.kembalikan(req.params.id, req.body.alasan, req.user), 'Usulan berhasil dikembalikan')
+      const user = requireUser(req)
+      sendSuccess(
+        res,
+        await layananService.kembalikan(req.params.id, req.body.alasan, user),
+        'Usulan berhasil dikembalikan',
+      )
     } catch (error) {
       next(error)
     }
@@ -81,7 +109,12 @@ export const layananController = {
 
   setujui: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.setujui(req.params.id, req.body.catatan, req.user), 'Usulan berhasil disetujui')
+      const user = requireUser(req)
+      sendSuccess(
+        res,
+        await layananService.setujui(req.params.id, req.body.catatan, user),
+        'Usulan berhasil disetujui',
+      )
     } catch (error) {
       next(error)
     }
@@ -89,7 +122,12 @@ export const layananController = {
 
   batal: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.batal(req.params.id, req.body.alasan, req.user), 'Usulan berhasil dibatalkan')
+      const user = requireUser(req)
+      sendSuccess(
+        res,
+        await layananService.batal(req.params.id, req.body.alasan, user),
+        'Usulan berhasil dibatalkan',
+      )
     } catch (error) {
       next(error)
     }
@@ -97,7 +135,12 @@ export const layananController = {
 
   resubmit: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.resubmit(req.params.id, req.body.catatan, req.user), 'Usulan berhasil diajukan ulang')
+      const user = requireUser(req)
+      sendSuccess(
+        res,
+        await layananService.resubmit(req.params.id, req.body.catatan, user),
+        'Usulan berhasil diajukan ulang',
+      )
     } catch (error) {
       next(error)
     }
