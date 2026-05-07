@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { Prisma, StatusPegawai } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
@@ -13,6 +13,37 @@ import { ROLES } from '@/shared/constants'
 export const integrasiRoutes = Router()
 
 integrasiRoutes.use(authorize(ROLES.ADMIN_SISTEM))
+
+const readExcelRows = async (filePath: string): Promise<Record<string, unknown>[]> => {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.readFile(filePath)
+  const ws = wb.worksheets[0]
+  if (!ws) return []
+  const headers: string[] = []
+  ws.getRow(1).eachCell({ includeEmpty: true }, (cell, col) => { headers[col - 1] = String(cell.value ?? '') })
+  if (headers.length === 0) return []
+  const rows: Record<string, unknown>[] = []
+  ws.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return
+    const obj: Record<string, unknown> = Object.fromEntries(headers.map((h) => [h, '']))
+    row.eachCell({ includeEmpty: true }, (cell, col) => {
+      const header = headers[col - 1]
+      if (!header) return
+      const val = cell.value
+      if (val == null) return
+      if (val instanceof Date) { obj[header] = val.toISOString().split('T')[0]; return }
+      if (typeof val === 'object') {
+        if ('richText' in val) { obj[header] = (val as {richText: {text: string}[]}).richText.map((r) => r.text).join(''); return }
+        if ('result' in val) { const r = (val as {result: unknown}).result; obj[header] = r instanceof Date ? r.toISOString().split('T')[0] : (r ?? ''); return }
+        if ('text' in val) { obj[header] = (val as {text: string}).text; return }
+        obj[header] = ''; return
+      }
+      obj[header] = val
+    })
+    rows.push(obj)
+  })
+  return rows
+}
 
 const toStringValue = (value: unknown): string => {
   if (value === undefined || value === null) return ''
@@ -155,9 +186,7 @@ integrasiRoutes.post('/diagnosa/asn', upload.single('file'), async (req, res, ne
   const file = req.file
   if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
   try {
-    const workbook = XLSX.readFile(file.path)
-    const sheetName = workbook.SheetNames[0]
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[sheetName], { defval: '', raw: false })
+    const rows = await readExcelRows(file.path)
     if (rows.length === 0) { sendSuccess(res, { kolom: [], contoh: [], pesan: 'File kosong atau tidak ada baris data' }); return }
 
     const kolomAsli = Object.keys(rows[0])
@@ -202,9 +231,7 @@ integrasiRoutes.post('/import/asn', upload.single('file'), async (req, res, next
   })
 
   try {
-    const workbook = XLSX.readFile(file.path)
-    const sheetName = workbook.SheetNames[0]
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[sheetName], { defval: '', raw: false })
+    const rows = await readExcelRows(file.path)
     const kolomTerdeteksi = rows.length > 0 ? Object.keys(rows[0]).join(', ') : '(tidak ada baris)'
     const parsedRows = rows.map((row) => parseAsnRow(row))
     const candidateUnitIds = [...new Set(parsedRows.map((row) => row.unitOrganisasiId).filter((id): id is string => Boolean(id)))]
@@ -450,17 +477,17 @@ integrasiRoutes.get('/log/:id/errors', async (req, res, next) => {
       orderBy: { nomorBaris: 'asc' },
       take: 1000,
     })
-    const sheet = XLSX.utils.json_to_sheet(
-      errors.map((item) => ({
-        nomorBaris: item.nomorBaris,
-        nomorId: item.nomorId,
-        errorMessage: item.errorMessage,
-        dataAsli: JSON.stringify(item.dataAsli),
-      })),
-    )
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, sheet, 'Errors')
-    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer
+    const errorRows = errors.map((item) => ({
+      nomorBaris: item.nomorBaris,
+      nomorId: item.nomorId,
+      errorMessage: item.errorMessage,
+      dataAsli: JSON.stringify(item.dataAsli),
+    }))
+    const workbook = new ExcelJS.Workbook()
+    const ws = workbook.addWorksheet('Errors')
+    if (errorRows.length > 0) ws.columns = Object.keys(errorRows[0]).map((key) => ({ header: key, key }))
+    ws.addRows(errorRows)
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer())
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', `attachment; filename="import-errors-${req.params.id}.xlsx"`)
     res.send(buffer)

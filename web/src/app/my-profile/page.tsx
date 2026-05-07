@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { normalizeRoleName } from "@/lib/dashboard-redirect";
+import { displayRoleLabel } from "@/lib/display-labels";
 import { useAuthStore } from "@/store/auth.store";
 import type { ApiResponse } from "@/types/models";
 
@@ -16,16 +17,6 @@ interface AuthProfile {
   unitOrganisasiId?: string | null;
   mustChangePassword: boolean;
 }
-
-const ROLE_LABEL: Record<string, string> = {
-  Pengelola_OPD: "Pengelola OPD",
-  Analis_Pertama: "Analis Pertama",
-  Analis_Muda: "Analis Muda",
-  Analis_Madya: "Analis Madya",
-  Kabid: "Kepala Bidang",
-  Kepala_Badan: "Kepala Badan",
-  Admin_Sistem: "Administrator Sistem",
-};
 
 const getInitials = (name: string) =>
   name
@@ -48,6 +39,7 @@ export default function MyProfilePage() {
   const roleName =
     profile.data?.role?.nama ?? storedUser?.roleNama ?? "Pengelola_OPD";
   const normalizedRole = normalizeRoleName(roleName);
+  const roleLabel = displayRoleLabel(normalizedRole);
   const displayName =
     profile.data?.namaLengkap ?? storedUser?.namaLengkap ?? "User";
   const email = profile.data?.email ?? storedUser?.email ?? "-";
@@ -99,7 +91,7 @@ export default function MyProfilePage() {
             </span>
             <h4 className="!mb-1">{displayName}</h4>
             <span className="inline-flex rounded-full bg-primary-50 text-primary-700 px-3 py-1 text-xs font-medium">
-              {ROLE_LABEL[normalizedRole]}
+              {roleLabel}
             </span>
           </div>
 
@@ -150,7 +142,7 @@ export default function MyProfilePage() {
               <InfoItem label="Nama Lengkap" value={displayName} />
               <InfoItem label="Username" value={username} />
               <InfoItem label="Email" value={email} />
-              <InfoItem label="Role" value={ROLE_LABEL[normalizedRole]} />
+              <InfoItem label="Role" value={roleLabel} />
               <InfoItem label="ID Role" value={profile.data?.role?.id ?? "-"} />
               <InfoItem label="ID Unit Organisasi" value={unitOrganisasiId} />
               <InfoItem label="ID User" value={profile.data?.id ?? storedUser?.id ?? "-"} />

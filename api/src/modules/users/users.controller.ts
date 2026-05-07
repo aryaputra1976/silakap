@@ -65,4 +65,25 @@ export const usersController = {
       next(error)
     }
   },
+
+  accessReview: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await usersService.accessReview(req.query)
+      sendPaginated(res, result.data, result.meta)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  accessReviewExport: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const buffer = await usersService.accessReviewExport(req.query)
+      const filename = `access-review-${new Date().toISOString().slice(0, 10)}.xlsx`
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+      res.send(buffer)
+    } catch (error) {
+      next(error)
+    }
+  },
 }

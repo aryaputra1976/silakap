@@ -20,7 +20,6 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
         { label: "Draft Saya", href: "/layanan/draft" },
         { label: "Pengajuan Aktif", href: "/layanan/aktif" },
         { label: "Dikembalikan", href: "/layanan/dikembalikan" },
-        { label: "Download Hasil", href: "/layanan/selesai" },
         { label: "Riwayat Selesai", href: "/layanan/selesai" },
         { label: "Semua Usulan", href: "/layanan" },
       ],

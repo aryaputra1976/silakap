@@ -4,6 +4,10 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";
 import type { WorkflowLog } from "@/types/models";
+import {
+  displayTahapLabel,
+  displayWorkflowActionLabel,
+} from "@/lib/display-labels";
 
 dayjs.extend(relativeTime);
 dayjs.locale("id");
@@ -47,7 +51,7 @@ export default function WorkflowTimeline({ logs }: WorkflowTimelineProps) {
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h6 className="!mb-0">{log.aksi}</h6>
+                    <h6 className="!mb-0">{displayWorkflowActionLabel(log.aksi)}</h6>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {dayjs(log.createdAt).fromNow()}
                     </span>
@@ -55,7 +59,7 @@ export default function WorkflowTimeline({ logs }: WorkflowTimelineProps) {
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {log.dilakukanOleh?.namaLengkap ?? "Sistem"}
                     {log.dariTahap || log.keTahap
-                      ? `: ${log.dariTahap ?? "-"} -> ${log.keTahap ?? "-"}`
+                      ? `: ${displayTahapLabel(log.dariTahap)} -> ${displayTahapLabel(log.keTahap)}`
                       : ""}
                   </p>
                   {log.catatan ? (

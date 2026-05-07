@@ -4,7 +4,7 @@ import fs from 'fs'
 import multer from 'multer'
 import { env } from '@/core/config/env'
 import { AppError } from '@/core/errors/app-error'
-import { isAllowedMimeType } from '@/core/security/file.helper'
+import { isAllowedMimeType, isAllowedExtension } from '@/core/security/file.helper'
 
 fs.mkdirSync(env.UPLOAD_DIR, { recursive: true, mode: 0o700 })
 
@@ -20,10 +20,12 @@ export const upload = multer({
   storage,
   limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
+    if (!isAllowedExtension(file.originalname)) {
+      return callback(new AppError('Ekstensi file tidak diizinkan', 422))
+    }
     if (!isAllowedMimeType(file.mimetype)) {
       return callback(new AppError('Tipe file tidak diizinkan', 422))
     }
-
     return callback(null, true)
   },
 })

@@ -9,6 +9,7 @@ export interface UserResponseDto {
   roleId: string
   roleNama: string
   isActive: boolean
+  emailVerifiedAt: Date | null
   mustChangePassword: boolean
   lastLogin?: Date | null
   createdAt: Date
@@ -16,5 +17,6 @@ export interface UserResponseDto {
 }
 
 export interface ResetPasswordResponseDto {
-  temporaryPassword: string
+  temporaryPassword: string | null
+  emailSent: boolean
 }

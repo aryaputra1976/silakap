@@ -1,12 +1,10 @@
 import { z } from 'zod'
+import { passwordSchema } from '@/shared/validators/password.validator'
 
 export const changePasswordSchema = z
   .object({
     passwordLama: z.string().min(1),
-    passwordBaru: z
-      .string()
-      .min(8)
-      .regex(/^(?=.*[A-Z])(?=.*[0-9])/, 'Password harus mengandung huruf kapital dan angka'),
+    passwordBaru: passwordSchema,
     konfirmasiPassword: z.string(),
   })
   .refine((data) => data.passwordBaru === data.konfirmasiPassword, {

@@ -1,5 +1,5 @@
+import ExcelJS from 'exceljs'
 import { Prisma } from '@prisma/client'
-import * as XLSX from 'xlsx'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { buildMeta, getPaginationParams } from '@/core/http/pagination.helper'
@@ -62,20 +62,20 @@ export const auditService = {
       take: 1000,
       orderBy: { createdAt: 'desc' },
     })
-    const sheet = XLSX.utils.json_to_sheet(
-      data.map((item) => ({
-        id: item.id.toString(),
-        userId: item.userId,
-        userNama: item.userNama,
-        action: item.action,
-        entityType: item.entityType,
-        entityId: item.entityId,
-        ipAddress: item.ipAddress,
-        createdAt: item.createdAt.toISOString(),
-      })),
-    )
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, sheet, 'Audit')
-    return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer
+    const rows = data.map((item) => ({
+      id: item.id.toString(),
+      userId: item.userId,
+      userNama: item.userNama,
+      action: item.action,
+      entityType: item.entityType,
+      entityId: item.entityId,
+      ipAddress: item.ipAddress,
+      createdAt: item.createdAt.toISOString(),
+    }))
+    const workbook = new ExcelJS.Workbook()
+    const ws = workbook.addWorksheet('Audit')
+    if (rows.length > 0) ws.columns = Object.keys(rows[0]).map((key) => ({ header: key, key }))
+    ws.addRows(rows)
+    return Buffer.from(await workbook.xlsx.writeBuffer())
   },
 }

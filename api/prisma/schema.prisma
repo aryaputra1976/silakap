@@ -787,6 +787,7 @@ model User {
   dokumenTte          UsulanDokumenOutput[] @relation("DokumenTteOleh")
   peremajaanDiajukan  AsnPeremajaan[]       @relation("PeremajaanDiajukanOleh")
   peremajaanDisetujui AsnPeremajaan[]       @relation("PeremajaanDisetujuiOleh")
+  peremajaanDitugaskan AsnPeremajaan[]      @relation("PeremajaanDitugaskanKepada")
   revisiDikembalikan  UsulanRevisi[]        @relation("RevisiDikembalikanOleh")
   revisiResubmit      UsulanRevisi[]        @relation("RevisiResubmitOleh")
   arsipOleh           ArsipUsulan[]         @relation("ArsipDiarsipkanOleh")
@@ -1099,6 +1100,8 @@ model AsnPeremajaan {
   statusApproval  StatusApproval @default(Pending) @map("status_approval")
   diajukanOlehId  String         @map("diajukan_oleh_id") @db.VarChar(36)
   disetujuiOlehId String?        @map("disetujui_oleh_id") @db.VarChar(36)
+  ditugaskanKepadaId String?     @map("ditugaskan_kepada_id") @db.VarChar(36)
+  ditugaskanAt    DateTime?      @map("ditugaskan_at")
   catatan         String?        @db.Text
   approvedAt      DateTime?      @map("approved_at")
   rejectedAt      DateTime?      @map("rejected_at")
@@ -1108,11 +1111,14 @@ model AsnPeremajaan {
   asn           Asn   @relation(fields: [asnId], references: [id], onDelete: Cascade)
   diajukanOleh  User  @relation("PeremajaanDiajukanOleh", fields: [diajukanOlehId], references: [id], onDelete: Restrict)
   disetujuiOleh User? @relation("PeremajaanDisetujuiOleh", fields: [disetujuiOlehId], references: [id], onDelete: SetNull)
+  ditugaskanKepada User? @relation("PeremajaanDitugaskanKepada", fields: [ditugaskanKepadaId], references: [id], onDelete: SetNull)
 
   @@index([asnId])
   @@index([jenisPerubahan])
   @@index([statusApproval])
   @@index([diajukanOlehId])
+  @@index([ditugaskanKepadaId])
+  @@index([statusApproval, ditugaskanKepadaId])
   @@map("asn_peremajaan")
 }
 

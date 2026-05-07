@@ -35,3 +35,25 @@ export const verifyRefreshToken = (token: string): JwtPayload => {
     throw new AppError('Sesi tidak valid, silakan login kembali', 401)
   }
 }
+
+export interface EmailVerificationPayload {
+  userId: string
+  email: string
+  type: 'email-verify'
+}
+
+export const signEmailVerificationToken = (userId: string, email: string): string =>
+  jwt.sign({ userId, email, type: 'email-verify' } satisfies EmailVerificationPayload, env.JWT_SECRET, { expiresIn: '24h' } as SignOptions)
+
+export const verifyEmailVerificationToken = (token: string): EmailVerificationPayload => {
+  try {
+    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload & Partial<EmailVerificationPayload>
+    if (payload.type !== 'email-verify' || !payload.userId || !payload.email) {
+      throw new AppError('Link verifikasi tidak valid', 400)
+    }
+    return { userId: payload.userId, email: payload.email, type: 'email-verify' }
+  } catch (err) {
+    if (err instanceof AppError) throw err
+    throw new AppError('Link verifikasi tidak valid atau sudah kadaluarsa', 400)
+  }
+}

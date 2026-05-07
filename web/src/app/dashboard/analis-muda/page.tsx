@@ -1,127 +1,101 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ApexOptions } from "apexcharts";
-import StatCard from "@/components/silakap/StatCard";
-import { AktivitasTable } from "@/components/silakap/AktivitiasTable";
-import {
-  useDashboardAktivitas,
-  useDashboardAntrian,
-  useDashboardLaporan,
-  useDashboardRingkasan,
-} from "@/hooks/useDashboard";
+import { useState } from "react";
+import KpiStrip from "@/components/silakap/dashboard/KpiStrip";
+import AntrianTable from "@/components/silakap/dashboard/AntrianTable";
+import { useDashboardOperatorKpi } from "@/hooks/useDashboard";
+import { useAuthStore } from "@/store/auth.store";
 
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+const TABS = ["Antrian", "Verifikasi aktif"] as const;
+type Tab = (typeof TABS)[number];
 
-const formatDateLabel = (value: string) =>
-  new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(value));
+const TAHAP = "AM";
 
-const LoadingCards = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
-    {Array.from({ length: 4 }).map((_, index) => (
-      <div
-        className="animate-pulse rounded-xl bg-gray-200 dark:bg-[#172036] h-24"
-        key={index}
-      />
-    ))}
-  </div>
-);
+function formatHariIni() {
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+}
+
+function LoadingSkeleton() {
+  return <div className="h-24 rounded-xl bg-gray-100 dark:bg-[#172036] animate-pulse" />;
+}
 
 export default function DashboardAnalisMudaPage() {
-  const ringkasan = useDashboardRingkasan();
-  const antrian = useDashboardAntrian();
-  const laporan = useDashboardLaporan();
-  const aktivitas = useDashboardAktivitas();
-
-  const isLoading =
-    ringkasan.isLoading ||
-    antrian.isLoading ||
-    laporan.isLoading ||
-    aktivitas.isLoading;
-  const isError =
-    ringkasan.isError || antrian.isError || laporan.isError || aktivitas.isError;
-  const amQueue =
-    antrian.data?.find((item) => item.tahapSaatIni === "AM")?._count._all ?? 0;
-  const laporanData = laporan.data ?? [];
-
-  const chartOptions: ApexOptions = {
-    chart: { toolbar: { show: true }, zoom: { enabled: false } },
-    colors: ["#605DFF"],
-    dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 3 },
-    fill: { opacity: 0.2 },
-    xaxis: {
-      categories: laporanData.map((item) => formatDateLabel(item.tanggalLaporan)),
-      labels: { style: { colors: "#8695AA", fontSize: "12px" } },
-    },
-    yaxis: { labels: { style: { colors: "#64748B", fontSize: "12px" } } },
-    grid: { borderColor: "#ECEEF2" },
-  };
+  const [activeTab, setActiveTab] = useState<Tab>("Antrian");
+  const user = useAuthStore((s) => s.user);
+  const { data: kpi, isLoading, isError } = useDashboardOperatorKpi(TAHAP);
 
   return (
-    <div className="space-y-[25px]">
-      <div>
-        <h1 className="!mb-1">Dashboard Analis Muda</h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Monitoring verifikasi tahap AM
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="!mb-1 text-xl font-bold text-gray-900 dark:text-white">
+            Dashboard verifikasi - BKD
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Operator:{" "}
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {user?.namaLengkap ?? "—"}
+            </span>{" "}
+            | {formatHariIni()}
+          </p>
+          <p className="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400">
+            Antrian memuat usulan layanan dan pengajuan yang dikirim dari portal.
+          </p>
+        </div>
+
+        <div className="flex gap-2 shrink-0">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                activeTab === tab
+                  ? "bg-white dark:bg-[#0c1427] border-gray-200 dark:border-[#172036] text-gray-900 dark:text-white shadow-sm"
+                  : "bg-transparent border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {isError ? (
-        <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">
-          Gagal memuat data
+      {isError && (
+        <div className="py-3 px-4 text-danger-500 bg-danger-50 border border-danger-200 rounded-md text-sm">
+          Gagal memuat data dashboard
         </div>
-      ) : null}
+      )}
 
-      {isLoading ? (
-        <LoadingCards />
-      ) : (
+      {activeTab === "Antrian" && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
-            <StatCard label="Antrian AM" value={amQueue} icon="fact_check" color="blue" />
-            <StatCard
-              label="SLA Warning"
-              value={ringkasan.data?.totalSlaWarning ?? 0}
-              icon="warning"
-              color="yellow"
-            />
-            <StatCard
-              label="SLA Overdue"
-              value={ringkasan.data?.totalSlaOverdue ?? 0}
-              icon="error"
-              color="red"
-            />
-            <StatCard
-              label="Selesai"
-              value={ringkasan.data?.totalSelesai ?? 0}
-              icon="task_alt"
-              color="green"
-            />
-          </div>
-
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-            <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-              <h5 className="!mb-0">Usulan Masuk 7 Hari</h5>
-            </div>
-            <Chart
-              options={chartOptions}
-              series={[
-                {
-                  name: "Usulan Masuk",
-                  data: laporanData.map((item) => item.usulanMasuk),
-                },
+          {isLoading ? (
+            <LoadingSkeleton />
+          ) : (
+            <KpiStrip
+              items={[
+                { label: "Menunggu verifikasi", value: kpi?.menungguVerifikasi ?? 0, color: "blue" },
+                { label: "Sedang diproses", value: kpi?.sedangDiproses ?? 0, color: "orange" },
+                { label: "Mendekati SLA", value: kpi?.mendekatiSla ?? 0, color: "red" },
+                { label: "Selesai hari ini", value: kpi?.selesaiHariIni ?? 0, color: "green" },
               ]}
-              type="area"
-              height={350}
-              width="100%"
             />
+          )}
+          <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl">
+            <AntrianTable />
           </div>
-
-          <AktivitasTable data={aktivitas.data ?? []} />
         </>
+      )}
+
+      {activeTab === "Verifikasi aktif" && (
+        <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl text-center py-16">
+          <i className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">fact_check</i>
+          <p className="mt-3 text-gray-400 dark:text-gray-500">Verifikasi aktif — segera hadir</p>
+        </div>
       )}
     </div>
   );

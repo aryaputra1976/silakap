@@ -18,6 +18,12 @@ const envSchema = z.object({
   MAX_LOGIN_ATTEMPTS: z.coerce.number().int().positive().default(5),
   LOCK_DURATION_MINUTES: z.coerce.number().int().positive().default(30),
   PASSWORD_HISTORY_COUNT: z.coerce.number().int().positive().default(5),
+  // 0 = tidak kadaluarsa; default 90 hari
+  PASSWORD_EXPIRY_DAYS: z.coerce.number().int().min(0).default(90),
+  // Maksimal sesi aktif per user (per device); 0 = tidak dibatasi
+  MAX_SESSIONS_PER_USER: z.coerce.number().int().min(0).default(3),
+  // 0 = fitur dimatikan; default 90 hari tidak login → akun di-disable otomatis
+  INACTIVE_ACCOUNT_DAYS: z.coerce.number().int().min(0).default(90),
   MAX_FILE_SIZE_MB: z.coerce.number().positive().default(5),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   UPLOAD_DIR: z.string().default('uploads'),
@@ -27,6 +33,8 @@ const envSchema = z.object({
   API_PREFIX: z.string().default('/api/v1'),
   APP_URL: z.string().default('http://localhost:3000'),
   CRON_SECRET: z.string().min(16, 'CRON_SECRET minimal 16 karakter').default('dev-cron-secret'),
+  DB_POOL_LIMIT: z.coerce.number().int().positive().default(10),
+  DB_POOL_TIMEOUT: z.coerce.number().int().positive().default(30),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
   SMTP_SECURE: booleanFromEnv.default(false),
@@ -55,6 +63,12 @@ if (env.NODE_ENV === 'production') {
   }
   if (env.CRON_SECRET === 'dev-cron-secret') {
     throw new Error('CRON_SECRET production wajib diganti')
+  }
+  if (env.JWT_SECRET.length < 64) {
+    throw new Error('JWT_SECRET production wajib minimal 64 karakter acak')
+  }
+  if (env.JWT_REFRESH_SECRET.length < 64) {
+    throw new Error('JWT_REFRESH_SECRET production wajib minimal 64 karakter acak')
   }
 }
 

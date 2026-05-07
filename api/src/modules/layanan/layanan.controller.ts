@@ -15,7 +15,7 @@ export const layananController = {
   list: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const user = requireUser(req)
-      const result = await layananService.list(user.id, user.roleName, req.query)
+      const result = await layananService.list(user.id, user.roleName, user.unitOrganisasiId, req.query)
       sendPaginated(res, result.data, result.meta)
     } catch (error) {
       next(error)
@@ -24,7 +24,8 @@ export const layananController = {
 
   detail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await layananService.detail(req.params.id))
+      const user = requireUser(req)
+      sendSuccess(res, await layananService.detail(req.params.id, user))
     } catch (error) {
       next(error)
     }

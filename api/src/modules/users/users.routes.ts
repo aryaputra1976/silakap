@@ -10,6 +10,8 @@ export const usersRoutes = Router()
 
 usersRoutes.use(authorize(ROLES.ADMIN_SISTEM))
 usersRoutes.get('/', usersController.list)
+usersRoutes.get('/access-review', usersController.accessReview)
+usersRoutes.get('/access-review/export', usersController.accessReviewExport)
 usersRoutes.get('/:id', usersController.detail)
 usersRoutes.post('/', validate(createUserSchema), usersController.create)
 usersRoutes.put('/:id', validate(updateUserSchema), usersController.update)

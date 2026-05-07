@@ -3,10 +3,10 @@ module.exports = {
   apps: [{
     name: 'silakap-api',
     script: 'dist/server.js',
-    instances: 1,
-    exec_mode: 'fork',
+    instances: 'max',
+    exec_mode: 'cluster',
     watch: false,
-    max_memory_restart: '256M',
+    max_memory_restart: '512M',
     env: {
       NODE_ENV: 'production',
     },
@@ -15,5 +15,8 @@ module.exports = {
     log_date_format: 'YYYY-MM-DD HH:mm:ss',
     restart_delay: 3000,
     max_restarts: 10,
+    // Graceful shutdown — beri waktu request yang sedang berjalan selesai
+    kill_timeout: 5000,
+    listen_timeout: 8000,
   }],
 }

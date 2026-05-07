@@ -157,6 +157,7 @@ export interface UsulanDetail extends UsulanLayanan {
     kode: string;
     nama: string;
     butuhTteKepalaBadan: boolean;
+    persyaratanLayanan: { id: string; namaPersyaratan: string; isRequired: boolean; urutan: number | null }[];
   };
   asn: {
     id: string;
@@ -165,6 +166,8 @@ export interface UsulanDetail extends UsulanLayanan {
     unitOrganisasiId: string | null;
   };
   unitOrganisasi: { id: string; nama: string };
+  diajukanOleh: { id: string; namaLengkap: string } | null;
+  createdAt: string;
   workflowLog: WorkflowLog[];
   slaTracker: SlaTracker[];
   dokumen: UsulanDokumen[];
@@ -175,8 +178,10 @@ export interface RefJenisLayanan {
   id: string;
   kode: string;
   nama: string;
+  deskripsi?: string | null;
   butuhTteKepalaBadan: boolean;
   isActive: boolean;
+  totalSlaHari?: number;
   persyaratanLayanan?: {
     id: string;
     namaPersyaratan: string;
@@ -499,12 +504,16 @@ export interface AsnPeremajaan {
   jenisPerubahan: string;
   dataLama: Record<string, unknown> | null;
   dataBaru: Record<string, unknown>;
+  dokumenBukti: string | null;
   statusApproval: "Pending" | "Approved" | "Rejected";
   catatan: string | null;
   createdAt: string;
+  updatedAt?: string;
   asn?: { id: string; nipBaru: string; nama: string };
   diajukanOleh?: { id: string; namaLengkap: string };
   disetujuiOleh?: { id: string; namaLengkap: string } | null;
+  ditugaskanKepada?: { id: string; namaLengkap: string } | null;
+  ditugaskanAt?: string | null;
 }
 
 export interface ValidasiData {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import type { SlaTracker } from "@/types/models";
+import { displayTahapLabel } from "@/lib/display-labels";
 
 interface SlaCountdownProps {
   slaTracker: SlaTracker[];
@@ -60,7 +61,7 @@ export default function SlaCountdown({ slaTracker }: SlaCountdownProps) {
         </span>
       </div>
       <p className="mt-1 text-sm">
-        Tahap {activeTracker.tahapSaat} berakhir{" "}
+        Tahap {displayTahapLabel(activeTracker.tahapSaat)} berakhir{" "}
         {dayjs(activeTracker.slaHabisAt).format("DD/MM/YYYY HH:mm")}
       </p>
     </div>

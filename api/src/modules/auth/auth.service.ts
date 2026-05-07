@@ -3,8 +3,9 @@ import type { User, Role } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { env } from '@/core/config/env'
+import { logger } from '@/core/logger/logger'
 import { comparePassword, hashPassword, isPasswordInHistory } from '@/core/security/password.helper'
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/core/security/jwt.helper'
+import { signAccessToken, signRefreshToken, verifyRefreshToken, signEmailVerificationToken, verifyEmailVerificationToken } from '@/core/security/jwt.helper'
 import { ROLES } from '@/shared/constants'
 import type { AuthUserResponseDto, LoginResponseDto, RefreshResponseDto } from './dto/auth-response.dto'
 import type { RegisterDto } from './dto/register.dto'
@@ -56,6 +57,29 @@ const issueTokens = async (
   })
   const refreshToken = signRefreshToken({ userId: user.id })
 
+  // Batasi sesi aktif per user — revoke token terlama jika melebihi limit
+  if (env.MAX_SESSIONS_PER_USER > 0) {
+    const activeSessions = await db.refreshToken.findMany({
+      where: { userId: user.id, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    })
+
+    if (activeSessions.length >= env.MAX_SESSIONS_PER_USER) {
+      const toRevoke = activeSessions.slice(0, activeSessions.length - env.MAX_SESSIONS_PER_USER + 1)
+      await db.refreshToken.updateMany({
+        where: { id: { in: toRevoke.map((s) => s.id) } },
+        data: { revokedAt: new Date() },
+      })
+      if (user.email) {
+        void sendSessionRevokedNotification(
+          { id: user.id, namaLengkap: user.namaLengkap, email: user.email },
+          toRevoke.length,
+        )
+      }
+    }
+  }
+
   await db.refreshToken.create({
     data: {
       userId: user.id,
@@ -67,6 +91,120 @@ const issueTokens = async (
   })
 
   return { accessToken, refreshToken }
+}
+
+const sendPostRegisterEmails = async (
+  userId: string,
+  namaLengkap: string,
+  email: string,
+  nip: string,
+  unitNama: string,
+): Promise<void> => {
+  try {
+    const { emailService, emailTemplates } = await import('@/modules/email')
+
+    // 1. Kirim link verifikasi email ke pendaftar
+    const verificationToken = signEmailVerificationToken(userId, email)
+    const verificationUrl = `${env.APP_URL}/verify-email?token=${verificationToken}`
+    const verifyTemplate = emailTemplates.emailVerification({ namaLengkap, verificationUrl })
+    await emailService.send(verifyTemplate, email)
+
+    // 2. Kirim notifikasi ke semua Admin_Sistem yang punya email
+    const admins = await db.user.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+        role: { nama: ROLES.ADMIN_SISTEM, deletedAt: null },
+        email: { not: '' },
+      },
+      select: { email: true, namaLengkap: true },
+    })
+
+    const activationUrl = `${env.APP_URL}/admin/users?isActive=false`
+    await Promise.allSettled(
+      admins.map((admin) => {
+        const template = emailTemplates.adminNewRegistration({
+          namaAdmin: admin.namaLengkap,
+          namaPendaftar: namaLengkap,
+          nip,
+          unitNama,
+          emailPendaftar: email,
+          activationUrl,
+        })
+        return emailService.send(template, admin.email!)
+      }),
+    )
+  } catch (err) {
+    logger.error('Gagal mengirim email pasca registrasi', { userId, err })
+  }
+}
+
+const parseUserAgent = (ua?: string): string => {
+  if (!ua) return 'Perangkat tidak dikenal'
+  if (/mobile/i.test(ua)) {
+    if (/android/i.test(ua)) return 'Android'
+    if (/iphone|ipad/i.test(ua)) return 'iOS'
+    return 'Perangkat Mobile'
+  }
+  if (/chrome/i.test(ua) && !/edg/i.test(ua)) return 'Chrome'
+  if (/firefox/i.test(ua)) return 'Firefox'
+  if (/safari/i.test(ua)) return 'Safari'
+  if (/edg/i.test(ua)) return 'Edge'
+  return 'Browser Desktop'
+}
+
+const sendLoginFromNewIpNotification = async (
+  user: { id: string; namaLengkap: string; email: string },
+  ipAddress: string,
+  userAgent?: string,
+): Promise<void> => {
+  try {
+    const { emailService, emailTemplates } = await import('@/modules/email')
+    const waktu = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Makassar', dateStyle: 'full', timeStyle: 'short' })
+    const template = emailTemplates.loginFromNewIp({
+      namaLengkap: user.namaLengkap,
+      ipAddress,
+      browser: parseUserAgent(userAgent),
+      waktu,
+      changePasswordUrl: `${env.APP_URL}/change-password`,
+    })
+    await emailService.send(template, user.email)
+  } catch (err) {
+    logger.error('Gagal kirim notifikasi login IP baru', { userId: user.id, err })
+  }
+}
+
+const sendAccountLockedNotification = async (
+  user: { id: string; namaLengkap: string; email: string },
+): Promise<void> => {
+  try {
+    const { emailService, emailTemplates } = await import('@/modules/email')
+    const template = emailTemplates.accountLocked({
+      namaLengkap: user.namaLengkap,
+      maxAttempts: env.MAX_LOGIN_ATTEMPTS,
+      lockDurationMinutes: env.LOCK_DURATION_MINUTES,
+    })
+    await emailService.send(template, user.email)
+  } catch (err) {
+    logger.error('Gagal kirim notifikasi akun terkunci', { userId: user.id, err })
+  }
+}
+
+const sendSessionRevokedNotification = async (
+  user: { id: string; namaLengkap: string; email: string },
+  revokedCount: number,
+): Promise<void> => {
+  try {
+    const { emailService, emailTemplates } = await import('@/modules/email')
+    const template = emailTemplates.sessionRevoked({
+      namaLengkap: user.namaLengkap,
+      revokedCount,
+      changePasswordUrl: `${env.APP_URL}/change-password`,
+    })
+    await emailService.send(template, user.email)
+  } catch (err) {
+    logger.error('Gagal kirim notifikasi sesi di-revoke', { userId: user.id, err })
+  }
 }
 
 export const authService = {
@@ -183,6 +321,9 @@ export const authService = {
       return registeredUser
     })
 
+    // Fire-and-forget: kirim verifikasi email ke pendaftar + notifikasi ke semua admin
+    void sendPostRegisterEmails(user.id, user.namaLengkap, user.email, user.username, unit.nama)
+
     return {
       id: user.id,
       username: user.username,
@@ -193,6 +334,33 @@ export const authService = {
       unitOrganisasiId: user.unitOrganisasiId?.toString() ?? null,
       isActive: user.isActive,
     }
+  },
+
+  async verifyEmail(token: string): Promise<{ alreadyVerified: boolean }> {
+    const { userId, email } = verifyEmailVerificationToken(token)
+
+    const user = await db.user.findFirst({
+      where: { id: userId, email, deletedAt: null },
+    })
+    if (!user) throw new AppError('Link verifikasi tidak valid atau sudah kadaluarsa', 400)
+    if (user.emailVerifiedAt) return { alreadyVerified: true }
+
+    await db.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: new Date() },
+    })
+
+    await db.auditLog.create({
+      data: {
+        userId: user.id,
+        userNama: user.namaLengkap,
+        action: 'VERIFY_EMAIL',
+        entityType: 'User',
+        entityId: user.id,
+      },
+    })
+
+    return { alreadyVerified: false }
   },
 
   async login(
@@ -224,13 +392,18 @@ export const authService = {
     const passwordValid = await comparePassword(password, user.passwordHash)
     if (!passwordValid) {
       const attempts = user.loginAttempts + 1
+      const justLocked = attempts >= env.MAX_LOGIN_ATTEMPTS
       await db.user.update({
         where: { id: user.id },
         data: {
           loginAttempts: attempts,
-          lockedAt: attempts >= env.MAX_LOGIN_ATTEMPTS ? new Date() : null,
+          lockedAt: justLocked ? new Date() : null,
         },
       })
+
+      if (justLocked && user.email) {
+        void sendAccountLockedNotification({ id: user.id, namaLengkap: user.namaLengkap, email: user.email })
+      }
 
       throw new AppError('Username atau password salah', 401)
     }
@@ -254,6 +427,23 @@ export const authService = {
         userAgent,
       },
     })
+
+    // Deteksi login dari IP baru — bandingkan dengan sesi terakhir
+    if (ipAddress && updatedUser.email) {
+      const lastToken = await db.refreshToken.findFirst({
+        where: { userId: updatedUser.id },
+        orderBy: { createdAt: 'desc' },
+        skip: 1, // skip token yang baru saja dibuat di issueTokens
+        select: { ipAddress: true },
+      })
+      if (lastToken && lastToken.ipAddress && lastToken.ipAddress !== ipAddress) {
+        void sendLoginFromNewIpNotification(
+          { id: updatedUser.id, namaLengkap: updatedUser.namaLengkap, email: updatedUser.email },
+          ipAddress,
+          userAgent,
+        )
+      }
+    }
 
     return { ...tokens, user: toAuthUser(updatedUser) }
   },

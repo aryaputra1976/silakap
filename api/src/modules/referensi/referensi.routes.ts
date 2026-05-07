@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { sendSuccess } from '@/core/http/response.helper'
@@ -40,6 +40,38 @@ import { referensiController } from './referensi.controller'
 
 export const referensiRoutes = Router()
 const adminOnly = authorize(ROLES.ADMIN_SISTEM)
+
+const readExcelRows = async (filePath: string): Promise<Record<string, unknown>[]> => {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.readFile(filePath)
+  const ws = wb.worksheets[0]
+  if (!ws) return []
+  const headers: string[] = []
+  ws.getRow(1).eachCell({ includeEmpty: true }, (cell, col) => { headers[col - 1] = String(cell.value ?? '') })
+  if (headers.length === 0) return []
+  const rows: Record<string, unknown>[] = []
+  ws.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return
+    const obj: Record<string, unknown> = Object.fromEntries(headers.map((h) => [h, '']))
+    row.eachCell({ includeEmpty: true }, (cell, col) => {
+      const header = headers[col - 1]
+      if (!header) return
+      const val = cell.value
+      if (val == null) return
+      if (val instanceof Date) { obj[header] = val.toISOString().split('T')[0]; return }
+      if (typeof val === 'object') {
+        if ('richText' in val) { obj[header] = (val as {richText: {text: string}[]}).richText.map((r) => r.text).join(''); return }
+        if ('result' in val) { const r = (val as {result: unknown}).result; obj[header] = r instanceof Date ? r.toISOString().split('T')[0] : (r ?? ''); return }
+        if ('text' in val) { obj[header] = (val as {text: string}).text; return }
+        obj[header] = ''; return
+      }
+      obj[header] = val
+    })
+    rows.push(obj)
+  })
+  return rows
+}
+
 const chunk = <T>(items: T[], size: number): T[][] => {
   const chunks: T[][] = []
   for (let index = 0; index < items.length; index += size) {
@@ -102,11 +134,7 @@ referensiRoutes.post('/unit-organisasi/import', adminOnly, upload.single('file')
   }
 
   try {
-    const wb = XLSX.readFile(file.path)
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
-      wb.Sheets[wb.SheetNames[0]],
-      { defval: '', raw: false },
-    )
+    const rows = await readExcelRows(file.path)
 
     const toStr = (value: unknown): string => (value == null ? '' : String(value))
     const normalizeKey = (key: string): string => key.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -314,8 +342,7 @@ referensiRoutes.post('/jabatan/struktural/import', adminOnly, upload.single('fil
   const file = req.file
   if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
   try {
-    const wb = XLSX.readFile(file.path)
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false })
+    const rows = await readExcelRows(file.path)
 
     const toStr = (v: unknown): string => v == null ? '' : String(v)
     const normKey = (k: string): string => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -420,8 +447,7 @@ referensiRoutes.post('/jabatan/fungsional/import', adminOnly, upload.single('fil
   const file = req.file
   if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
   try {
-    const wb = XLSX.readFile(file.path)
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false })
+    const rows = await readExcelRows(file.path)
 
     const toStr = (v: unknown): string => v == null ? '' : String(v)
     const normKey = (k: string): string => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -505,8 +531,7 @@ referensiRoutes.post('/jabatan/pelaksana/import', adminOnly, upload.single('file
   const file = req.file
   if (!file) { next(new AppError('File Excel wajib diunggah', 422)); return }
   try {
-    const wb = XLSX.readFile(file.path)
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false })
+    const rows = await readExcelRows(file.path)
 
     const toStr = (v: unknown): string => v == null ? '' : String(v)
     const normKey = (k: string): string => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')

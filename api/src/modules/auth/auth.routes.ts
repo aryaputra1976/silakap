@@ -19,6 +19,9 @@ authRoutes.get('/unit-organisasi', rateLimit(60, 5 * 60_000), authController.uni
 // 20 request/menit — refresh token boleh lebih longgar tapi tetap dibatasi
 authRoutes.post('/refresh', rateLimitRefresh, validate(refreshSchema), authController.refresh)
 
+// Link dikirim via email saat registrasi, tidak butuh autentikasi
+authRoutes.get('/verify-email', authController.verifyEmail)
+
 authRoutes.post('/logout', authenticate, authController.logout)
 authRoutes.get('/me', authenticate, authController.me)
 

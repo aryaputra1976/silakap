@@ -7,13 +7,16 @@ export const createUsulanSchema = z.object({
   tanggalUsulan: z.coerce.date(),
 })
 
+const catatanOptional = z.string().max(1000).trim().optional()
+const alasanWajib = (min: number) => z.string().trim().min(min).max(1000)
+
 export const submitSchema = z.object({})
 export const terimaSchema = z.object({})
-export const teruskanSchema = z.object({ catatan: z.string().optional() })
-export const kembalikanSchema = z.object({ alasan: z.string().min(10) })
-export const setujuiSchema = z.object({ catatan: z.string().optional() })
-export const batalSchema = z.object({ alasan: z.string().min(5) })
-export const resubmitSchema = z.object({ catatan: z.string().optional() })
+export const teruskanSchema = z.object({ catatan: catatanOptional })
+export const kembalikanSchema = z.object({ alasan: alasanWajib(10) })
+export const setujuiSchema = z.object({ catatan: catatanOptional })
+export const batalSchema = z.object({ alasan: alasanWajib(5) })
+export const resubmitSchema = z.object({ catatan: catatanOptional })
 export const uploadDokumenSchema = z.object({ jenisDokumen: z.string().optional() })
 
 export type CreateUsulanDto = z.infer<typeof createUsulanSchema>

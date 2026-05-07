@@ -41,3 +41,12 @@ dashboardRoutes.get('/analytics/sla-trend', authorize(...seniorRoles), dashboard
 dashboardRoutes.get('/analytics/throughput', authorize(...seniorRoles), dashboardController.throughput)
 dashboardRoutes.get('/analytics/bottleneck', authorize(...seniorRoles), dashboardController.bottleneck)
 dashboardRoutes.get('/analytics/ranking-opd', authorize(...seniorRoles), dashboardController.rankingOpd)
+
+// ─── New Dashboard Views ──────────────────────────────────────────────────
+
+const analisRoles = [ROLES.ANALIS_PERTAMA, ROLES.ANALIS_MUDA, ROLES.ANALIS_MADYA, ROLES.ADMIN_SISTEM]
+
+dashboardRoutes.get('/pimpinan', authorize(...seniorRoles), dashboardController.pimpinan)
+dashboardRoutes.get('/eskalasi-peremajaan', authorize(...seniorRoles, ROLES.ANALIS_MADYA), dashboardController.eskalasiPeremajaan)
+dashboardRoutes.get('/operator-kpi', authorize(...analisRoles), dashboardController.operatorKpi)
+dashboardRoutes.get('/antrian-detail', authorize(...allRoles), dashboardController.antrianDetail)

@@ -90,4 +90,18 @@ export const authController = {
       next(error)
     }
   },
+
+  verifyEmail: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const token = typeof req.query.token === 'string' ? req.query.token.trim() : ''
+      if (!token) throw new AppError('Token verifikasi tidak ditemukan', 400)
+      const result = await authService.verifyEmail(token)
+      const message = result.alreadyVerified
+        ? 'Email sudah terverifikasi sebelumnya'
+        : 'Email berhasil diverifikasi. Akun Anda sedang menunggu aktivasi oleh Admin BKPSDM.'
+      sendSuccess(res, result, message)
+    } catch (error) {
+      next(error)
+    }
+  },
 }

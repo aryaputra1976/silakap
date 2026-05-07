@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import StatusBadge from "@/components/silakap/StatusBadge";
 import { useLayananList } from "@/hooks/useLayanan";
+import { displayStatusLabel, displayTahapLabel } from "@/lib/display-labels";
 import { useAuthStore } from "@/store/auth.store";
 
 const STATUS_OPTIONS = [
@@ -91,7 +92,7 @@ export default function LayananPage() {
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option} value={option}>
-                {option || "Semua Status"}
+                {option ? displayStatusLabel(option) : "Semua Status"}
               </option>
             ))}
           </select>
@@ -104,7 +105,7 @@ export default function LayananPage() {
           >
             {TAHAP_OPTIONS.map((option) => (
               <option key={option} value={option}>
-                {option || "Semua Tahap"}
+                {option ? displayTahapLabel(option) : "Semua Tahap"}
               </option>
             ))}
           </select>
@@ -173,7 +174,7 @@ export default function LayananPage() {
                         <StatusBadge status={item.status} />
                       </td>
                       <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">
-                        {item.tahapSaatIni ?? "-"}
+                        {displayTahapLabel(item.tahapSaatIni)}
                       </td>
                       <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] whitespace-nowrap">
                         {new Date(item.tanggalUsulan).toLocaleDateString("id-ID")}

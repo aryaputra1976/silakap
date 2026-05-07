@@ -45,6 +45,31 @@ export const asnController = {
     }
   },
 
+  uploadPeremajaanDokumen: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      sendCreated(res, await asnService.uploadPeremajaanDokumen(req.file, req.user), 'Dokumen bukti berhasil diunggah')
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  downloadPeremajaanDokumen: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const dokumen = await asnService.downloadPeremajaanDokumen(req.params.fileId, req.user)
+      res.download(dokumen.filePath, dokumen.fileName)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  claimPeremajaan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      sendSuccess(res, await asnService.claimPeremajaan(req.params.id, req.user), 'Tiket peremajaan berhasil diambil')
+    } catch (error) {
+      next(error)
+    }
+  },
+
   approvePeremajaan: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       sendSuccess(res, await asnService.approvePeremajaan(req.params.id, req.body, req.user), 'Pengajuan peremajaan berhasil diproses')

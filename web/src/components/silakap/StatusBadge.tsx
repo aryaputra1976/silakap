@@ -1,4 +1,5 @@
 import type { StatusUsulan } from "@/types/models";
+import { displayStatusLabel } from "@/lib/display-labels";
 
 const STATUS_COLORS: Record<string, string> = {
   Draft: "bg-gray-100 text-gray-700 dark:bg-[#ffffff14] dark:text-gray-300",
@@ -25,7 +26,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
         STATUS_COLORS[status] ?? "bg-gray-100 text-gray-700"
       }`}
     >
-      {status}
+      {displayStatusLabel(status)}
     </span>
   );
 }

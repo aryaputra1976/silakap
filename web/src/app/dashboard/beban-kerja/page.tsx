@@ -1,14 +1,7 @@
 "use client";
 
 import { useDashboardAntrian } from "@/hooks/useDashboard";
-
-const tahapLabel: Record<string, string> = {
-  AP: "Analis Pertama",
-  AM: "Analis Muda",
-  AD: "Analis Madya",
-  Kabid: "Kabid",
-  KepalaBadan: "Kepala Badan",
-};
+import { displayTahapLabel } from "@/lib/display-labels";
 
 export default function BebanKerjaPage() {
   const antrian = useDashboardAntrian();
@@ -30,7 +23,7 @@ export default function BebanKerjaPage() {
             return (
               <div key={item.tahapSaatIni ?? "Diajukan"}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{tahapLabel[item.tahapSaatIni ?? ""] ?? "Diajukan"}</span>
+                  <span className="font-medium">{item.tahapSaatIni ? displayTahapLabel(item.tahapSaatIni) : "Diajukan"}</span>
                   <strong>{value} berkas</strong>
                 </div>
                 <div className="h-3 rounded-full bg-gray-100 dark:bg-[#172036] overflow-hidden">

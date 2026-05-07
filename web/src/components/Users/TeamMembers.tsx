@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 
 interface TeamMember {
   id: number;
@@ -349,19 +348,6 @@ const TeamMembers: React.FC = () => {
                 className="bg-gray-50 border border-gray-50 h-[36px] text-xs rounded-md w-full block text-black pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] ltr:md:pr-[16px] rtl:pl-[13px] rtl:md:pl-[16px] placeholder:text-gray-500 outline-0 dark:bg-[#15203c] dark:text-white dark:border-[#15203c] dark:placeholder:text-gray-400"
               />
             </form>
-          </div>
-          <div className="trezo-card-subtitle mt-[15px] sm:mt-0">
-            <Link
-              href="/users/add-user"
-              className="inline-block transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white"
-            >
-              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                  add
-                </i>
-                Add New Member
-              </span>
-            </Link>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ export class AppError extends Error {
     public override message: string,
     public statusCode: number = 500,
     public errors?: Record<string, string[]>,
+    public code?: string,
   ) {
     super(message)
     this.name = 'AppError'

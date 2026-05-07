@@ -105,6 +105,38 @@ export const useCreatePeremajaan = () => {
   });
 };
 
+export const useUploadPeremajaanDokumen = () =>
+  useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await api.post<
+        ApiResponse<{
+          namaFile: string;
+          fileId: string;
+          ukuran: number;
+          mimeType: string;
+          uploadedAt: string;
+        }>
+      >("/asn/peremajaan/dokumen", formData);
+      return data.data;
+    },
+  });
+
+export const downloadPeremajaanDokumen = async (fileId: string, filename: string) => {
+  const response = await api.get(`/asn/peremajaan/dokumen/${encodeURIComponent(fileId)}`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export const useApprovePeremajaan = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -115,6 +147,16 @@ export const useApprovePeremajaan = () => {
       id: string;
       body: { statusApproval: "Approved" | "Rejected"; catatan?: string };
     }) => api.put<ApiResponse<AsnPeremajaan>>(`/asn/peremajaan/${id}/approve`, body),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ["asn", "peremajaan"] }),
+  });
+};
+
+export const useClaimPeremajaan = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<ApiResponse<AsnPeremajaan>>(`/asn/peremajaan/${id}/claim`),
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: ["asn", "peremajaan"] }),
   });

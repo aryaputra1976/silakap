@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { StatusUsulan, TahapUsulan } from '@prisma/client'
+import { Prisma, StatusUsulan, TahapUsulan } from '@prisma/client'
 import { layananRepository } from './layanan.repository'
 import { workflowService } from '@/modules/workflow/workflow.service'
 import { layananNumberingService } from './layanan-numbering.service'
@@ -17,12 +17,39 @@ import { notificationEngine } from './engine/notification.engine'
 type Actor = {
   id: string
   roleName: string
+  unitOrganisasiId?: string
+}
+
+const ROLES_ALL_ACCESS = [
+  'Analis_Pertama',
+  'Analis_Muda',
+  'Analis_Madya',
+  'Kabid',
+  'Kepala_Badan',
+  'Admin_Sistem',
+]
+
+const assertCanAccessUsulan = (
+  actor: Actor,
+  usulanUnitOrganisasiId: bigint | string | null,
+): void => {
+  if (ROLES_ALL_ACCESS.includes(actor.roleName)) return
+  const unitId = usulanUnitOrganisasiId?.toString()
+  if (!actor.unitOrganisasiId || actor.unitOrganisasiId !== unitId) {
+    throw new AppError('Anda tidak memiliki akses ke usulan ini', 403)
+  }
 }
 
 export const layananService = {
-  async list(userId: string, role: string, query: any) {
+  async list(userId: string, role: string, unitOrganisasiId: string | undefined, query: any) {
     const { page, limit, skip } = getPaginationParams(query)
-    const where: any = { deletedAt: null }
+    const where: Prisma.UsulanLayananWhereInput = { deletedAt: null }
+
+    // Pengelola_OPD hanya boleh melihat usulan milik unit organisasinya sendiri
+    if (role === 'Pengelola_OPD') {
+      if (!unitOrganisasiId) throw new AppError('Unit organisasi tidak ditemukan', 403)
+      where.unitOrganisasiId = BigInt(unitOrganisasiId)
+    }
 
     const [data, total] = await Promise.all([
       layananRepository.findList(where, skip, limit),
@@ -32,8 +59,11 @@ export const layananService = {
     return { data, meta: buildMeta(total, page, limit) }
   },
 
-  async detail(id: string) {
-    return layananRepository.findByIdOrThrow(id)
+  async detail(id: string, actor: Actor) {
+    const usulan = await layananRepository.findByIdOrThrow(id)
+    assertCanAccessUsulan(actor, usulan.unitOrganisasiId)
+    const { usulanRevisi, ...rest } = usulan
+    return { ...rest, revisi: usulanRevisi }
   },
 
   async create(dto: any, actor: Actor) {
@@ -55,6 +85,8 @@ export const layananService = {
 
   async uploadDokumen(id: string, file: any, dto: any, actor: Actor) {
     layananAccessPolicy.canUpload(actor.roleName)
+    const usulan = await layananRepository.findByIdOrThrow(id)
+    assertCanAccessUsulan(actor, usulan.unitOrganisasiId)
     return layananDocumentService.upload(id, file, dto, actor.id)
   },
 
@@ -62,6 +94,7 @@ export const layananService = {
     layananAccessPolicy.canSubmit(actor.roleName)
 
     const usulan = await layananRepository.findByIdOrThrow(id)
+    assertCanAccessUsulan(actor, usulan.unitOrganisasiId)
     if (usulan.status !== StatusUsulan.Draft) {
       throw new AppError('Invalid status', 422)
     }
@@ -204,6 +237,8 @@ async teruskan(id: string, catatan: string, actor: Actor) {
   },
 
   async dokumenOutput(id: string, actor: Actor) {
+    const usulan = await layananRepository.findByIdOrThrow(id)
+    assertCanAccessUsulan(actor, usulan.unitOrganisasiId)
     return layananDocumentService.getOutput(id)
   },
 }

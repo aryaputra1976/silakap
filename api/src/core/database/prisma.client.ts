@@ -6,4 +6,12 @@ const log: Prisma.LogLevel[] =
     ? ['query', 'warn', 'error']
     : ['warn', 'error']
 
-export const db = new PrismaClient({ log })
+const separator = env.DATABASE_URL.includes('?') ? '&' : '?'
+const databaseUrl =
+  `${env.DATABASE_URL}${separator}` +
+  `connection_limit=${env.DB_POOL_LIMIT}&pool_timeout=${env.DB_POOL_TIMEOUT}`
+
+export const db = new PrismaClient({
+  log,
+  datasources: { db: { url: databaseUrl } },
+})

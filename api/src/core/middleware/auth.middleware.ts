@@ -1,7 +1,14 @@
 import type { NextFunction, Request, Response } from 'express'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
+import { env } from '@/core/config/env'
 import { verifyAccessToken } from '@/core/security/jwt.helper'
+
+// Endpoint yang boleh diakses walau password sudah kadaluarsa
+const isExemptFromExpiry = (req: Request): boolean => {
+  const url = req.originalUrl.split('?')[0]
+  return url.endsWith('/change-password') || url.endsWith('/logout') || url.endsWith('/auth/me')
+}
 
 export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -19,6 +26,20 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
     })
 
     if (!user || user.role.deletedAt) throw new AppError('Sesi tidak valid, silakan login kembali', 401)
+
+    // Cek password kadaluarsa (kecuali untuk endpoint ganti password & logout)
+    if (env.PASSWORD_EXPIRY_DAYS > 0 && !isExemptFromExpiry(req)) {
+      const reference = user.passwordChangedAt ?? user.createdAt
+      const daysSince = (Date.now() - reference.getTime()) / 86_400_000
+      if (daysSince > env.PASSWORD_EXPIRY_DAYS) {
+        throw new AppError(
+          `Password Anda telah kadaluarsa (lebih dari ${env.PASSWORD_EXPIRY_DAYS} hari). Silakan ganti password untuk melanjutkan.`,
+          403,
+          undefined,
+          'PASSWORD_EXPIRED',
+        )
+      }
+    }
 
     req.user = {
       id: user.id,

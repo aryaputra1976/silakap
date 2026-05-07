@@ -172,6 +172,7 @@ export default function AsnPage() {
       <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
         <div className="flex flex-col xl:flex-row gap-3">
           <input
+            suppressHydrationWarning
             className="h-[45px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] outline-0 grow"
             placeholder="Cari nama / NIP..."
             type="search"
@@ -184,6 +185,7 @@ export default function AsnPage() {
             onChange={(value) => resetPage(setUnitOrganisasiId, value)}
           />
           <select
+            suppressHydrationWarning
             className="h-[45px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px] outline-0"
             value={statusPegawai}
             onChange={(event) => resetPage(setStatusPegawai, event.target.value)}
@@ -196,6 +198,7 @@ export default function AsnPage() {
             ))}
           </select>
           <select
+            suppressHydrationWarning
             className="h-[45px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px] outline-0"
             value={golonganId}
             onChange={(event) => resetPage(setGolonganId, event.target.value)}
@@ -502,6 +505,7 @@ function UnitTreeSelect({
                 search
               </span>
               <input
+                suppressHydrationWarning
                 type="search"
                 className="h-10 w-full rounded-md border border-gray-200 bg-white pl-10 pr-3 text-sm outline-0 focus:border-primary-500 dark:border-[#172036] dark:bg-[#0c1427]"
                 placeholder="Cari unit..."

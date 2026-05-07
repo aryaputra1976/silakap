@@ -1,138 +1,112 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ApexOptions } from "apexcharts";
-import StatCard from "@/components/silakap/StatCard";
-import { AktivitasTable } from "@/components/silakap/AktivitiasTable";
-import {
-  useDashboardAktivitas,
-  useDashboardAntrian,
-  useDashboardPerJenis,
-  useDashboardRingkasan,
-} from "@/hooks/useDashboard";
+import { useState } from "react";
+import KpiStrip from "@/components/silakap/dashboard/KpiStrip";
+import AntrianTable from "@/components/silakap/dashboard/AntrianTable";
+import { useDashboardOperatorKpi } from "@/hooks/useDashboard";
+import { useAuthStore } from "@/store/auth.store";
 
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+const TABS = ["Antrian", "Verifikasi aktif"] as const;
+type Tab = (typeof TABS)[number];
 
-const LoadingCards = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
-    {Array.from({ length: 4 }).map((_, index) => (
-      <div
-        className="animate-pulse rounded-xl bg-gray-200 dark:bg-[#172036] h-24"
-        key={index}
-      />
-    ))}
-  </div>
-);
+const TAHAP = "AP";
+
+function formatHariIni() {
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+}
+
+function LoadingSkeleton() {
+  return <div className="h-24 rounded-xl bg-gray-100 dark:bg-[#172036] animate-pulse" />;
+}
 
 export default function DashboardAnalisPertamaPage() {
-  const ringkasan = useDashboardRingkasan();
-  const perJenis = useDashboardPerJenis();
-  const antrian = useDashboardAntrian();
-  const aktivitas = useDashboardAktivitas();
-
-  const isLoading =
-    ringkasan.isLoading ||
-    perJenis.isLoading ||
-    antrian.isLoading ||
-    aktivitas.isLoading;
-  const isError =
-    ringkasan.isError || perJenis.isError || antrian.isError || aktivitas.isError;
-  const apQueue =
-    antrian.data?.find((item) => item.tahapSaatIni === "AP")?._count._all ?? 0;
-
-  const chartOptions: ApexOptions = {
-    labels: (perJenis.data ?? []).map(
-      (item) => item.jenisLayanan?.nama ?? "Tanpa jenis",
-    ),
-    colors: ["#605DFF", "#37D80A", "#AD63F6", "#FFC107", "#FF4023"],
-    dataLabels: { enabled: false },
-    legend: { position: "bottom", labels: { colors: "#64748B" } },
-  };
-  const chartSeries = (perJenis.data ?? []).map((item) => item.total);
+  const [activeTab, setActiveTab] = useState<Tab>("Antrian");
+  const user = useAuthStore((s) => s.user);
+  const { data: kpi, isLoading, isError } = useDashboardOperatorKpi(TAHAP);
 
   return (
-    <div className="space-y-[25px]">
-      <div>
-        <h1 className="!mb-1">Dashboard Analis Pertama</h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Ringkasan verifikasi tahap AP
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="!mb-1 text-xl font-bold text-gray-900 dark:text-white">
+            Dashboard verifikasi - BKD
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Operator:{" "}
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {user?.namaLengkap ?? "—"}
+            </span>{" "}
+            | {formatHariIni()}
+          </p>
+          <p className="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400">
+            Antrian memuat usulan layanan dan pengajuan yang dikirim dari portal.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 shrink-0">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                activeTab === tab
+                  ? "bg-white dark:bg-[#0c1427] border-gray-200 dark:border-[#172036] text-gray-900 dark:text-white shadow-sm"
+                  : "bg-transparent border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {isError ? (
-        <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">
-          Gagal memuat data
+      {isError && (
+        <div className="py-3 px-4 text-danger-500 bg-danger-50 border border-danger-200 rounded-md text-sm">
+          Gagal memuat data dashboard
         </div>
-      ) : null}
+      )}
 
-      {isLoading ? (
-        <LoadingCards />
-      ) : (
+      {/* Tab: Antrian */}
+      {activeTab === "Antrian" && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
-            <StatCard label="Antrian AP" value={apQueue} icon="assignment" color="blue" />
-            <StatCard
-              label="SLA Warning"
-              value={ringkasan.data?.totalSlaWarning ?? 0}
-              icon="warning"
-              color="yellow"
+          {/* 4 KPI */}
+          {isLoading ? (
+            <LoadingSkeleton />
+          ) : (
+            <KpiStrip
+              items={[
+                { label: "Menunggu verifikasi", value: kpi?.menungguVerifikasi ?? 0, color: "blue" },
+                { label: "Sedang diproses", value: kpi?.sedangDiproses ?? 0, color: "orange" },
+                { label: "Mendekati SLA", value: kpi?.mendekatiSla ?? 0, color: "red" },
+                { label: "Selesai hari ini", value: kpi?.selesaiHariIni ?? 0, color: "green" },
+              ]}
             />
-            <StatCard
-              label="SLA Overdue"
-              value={ringkasan.data?.totalSlaOverdue ?? 0}
-              icon="error"
-              color="red"
-            />
-            <StatCard
-              label="Selesai"
-              value={ringkasan.data?.totalSelesai ?? 0}
-              icon="task_alt"
-              color="green"
-            />
+          )}
+
+          {/* Antrian table */}
+          <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl">
+            <AntrianTable />
           </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-[25px]">
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-                <h5 className="!mb-0">Jenis Layanan</h5>
-              </div>
-              <Chart
-                options={chartOptions}
-                series={chartSeries}
-                type="pie"
-                height={320}
-                width="100%"
-              />
-            </div>
-
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-                <h5 className="!mb-0">Antrian Tahap AP</h5>
-              </div>
-              <div className="table-responsive overflow-x-auto">
-                <table className="w-full">
-                  <tbody>
-                    {(antrian.data ?? [])
-                      .filter((item) => item.tahapSaatIni === "AP")
-                      .slice(0, 5)
-                      .map((item) => (
-                        <tr key={item.tahapSaatIni ?? "AP"}>
-                          <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] font-medium">
-                            {item.tahapSaatIni}
-                          </td>
-                          <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] text-right">
-                            {item._count._all}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <AktivitasTable data={aktivitas.data ?? []} />
         </>
+      )}
+
+      {/* Tab: Verifikasi aktif */}
+      {activeTab === "Verifikasi aktif" && (
+        <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl text-center py-16">
+          <i className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">
+            fact_check
+          </i>
+          <p className="mt-3 text-gray-400 dark:text-gray-500">
+            Verifikasi aktif — segera hadir
+          </p>
+        </div>
       )}
     </div>
   );

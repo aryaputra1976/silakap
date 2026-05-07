@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useConfigLaporanOtomatis, useConfigLaporanOtomatisActions } from "@/hooks/useAdmin";
+import { displayRoleLabel } from "@/lib/display-labels";
 
 const roles = ["Kabid", "Kepala_Badan", "Admin_Sistem"];
 
@@ -34,7 +35,7 @@ export default function LaporanOtomatisPage() {
             <option>Excel</option>
           </select>
           <select className="h-[45px] w-full rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={form.penerimaRole} onChange={(event) => setForm((current) => ({ ...current, penerimaRole: event.target.value }))}>
-            {roles.map((item) => <option key={item}>{item}</option>)}
+            {roles.map((item) => <option key={item} value={item}>{displayRoleLabel(item)}</option>)}
           </select>
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))} /> Aktif</label>
           <button type="submit" className="w-full py-[10px] px-[20px] bg-primary-500 text-white rounded-md">Simpan</button>
@@ -50,7 +51,7 @@ export default function LaporanOtomatisPage() {
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.jenisLaporan ?? "-"}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.jadwalPengiriman ?? "-"}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.formatLaporan ?? "-"}</td>
-                    <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.penerimaRole ?? "-"}</td>
+                    <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{displayRoleLabel(item.penerimaRole)}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.isActive ? "Aktif" : "Nonaktif"}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.lastSent ? new Date(item.lastSent).toLocaleString("id-ID") : "-"}</td>
                   </tr>

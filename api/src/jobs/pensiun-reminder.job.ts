@@ -1,8 +1,11 @@
 import { db } from '@/core/database/prisma.client'
 import { ROLES } from '@/shared/constants'
 import { notifikasiService } from '@/modules/notifikasi'
+import { logger } from '@/core/logger/logger'
 
 export async function jalankanPensiunReminder(): Promise<{ count: number }> {
+  const startMs = Date.now()
+  logger.info('job:start', { job: 'pensiun-reminder' })
   const tigaPuluhHari = new Date()
   tigaPuluhHari.setDate(tigaPuluhHari.getDate() + 30)
 
@@ -39,5 +42,7 @@ export async function jalankanPensiunReminder(): Promise<{ count: number }> {
     })
   }
 
-  return { count: approaching.length }
+  const result = { count: approaching.length }
+  logger.info('job:done', { job: 'pensiun-reminder', durationMs: Date.now() - startMs, ...result })
+  return result
 }

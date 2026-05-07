@@ -4,6 +4,7 @@ import { pipeline } from 'node:stream/promises'
 import { spawn } from 'node:child_process'
 import { createGzip } from 'node:zlib'
 import { env } from '@/core/config/env'
+import { logger } from '@/core/logger/logger'
 
 type BackupResult = {
   filename: string
@@ -44,6 +45,8 @@ const pruneBackups = async (): Promise<number> => {
 }
 
 export const jalankanBackupDatabase = async (): Promise<BackupResult> => {
+  const startMs = Date.now()
+  logger.info('job:start', { job: 'db-backup' })
   await fs.mkdir(env.BACKUP_DIR, { recursive: true, mode: 0o700 })
   const config = parseDatabaseUrl()
   const filename = `silakap-db-${config.database}-${timestamp()}.sql.gz`
@@ -86,7 +89,9 @@ export const jalankanBackupDatabase = async (): Promise<BackupResult> => {
   await fs.rename(tmpPath, targetPath)
   const retained = await pruneBackups()
   const stat = await fs.stat(targetPath)
-  return { filename, path: targetPath, size: stat.size, retained }
+  const result: BackupResult = { filename, path: targetPath, size: stat.size, retained }
+  logger.info('job:done', { job: 'db-backup', durationMs: Date.now() - startMs, filename, sizeMb: (stat.size / 1048576).toFixed(2), retained })
+  return result
 }
 
 export const listBackups = async () => {

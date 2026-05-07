@@ -11,6 +11,7 @@ export const errorMiddleware: ErrorRequestHandler = (error, _req, res, _next) =>
     return res.status(error.statusCode).json({
       success: false,
       message: error.message,
+      ...(error.code ? { code: error.code } : {}),
       ...(error.errors ? { errors: error.errors } : {}),
     })
   }

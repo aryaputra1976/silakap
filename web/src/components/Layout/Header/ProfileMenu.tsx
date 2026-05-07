@@ -3,17 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { displayRoleLabel } from "@/lib/display-labels";
 import { useAuthStore } from "@/store/auth.store";
-
-const ROLE_LABEL: Record<string, string> = {
-  Pengelola_OPD: "Pengelola OPD",
-  Analis_Pertama: "Analis Pertama",
-  Analis_Muda: "Analis Muda",
-  Analis_Madya: "Analis Madya",
-  Kabid: "Kepala Bidang",
-  Kepala_Badan: "Kepala Badan",
-  Admin_Sistem: "Administrator Sistem",
-};
 
 const ProfileMenu: React.FC = () => {
   const [active, setActive] = useState(false);
@@ -27,9 +18,7 @@ const ProfileMenu: React.FC = () => {
     .map((word) => word[0])
     .join("")
     .toUpperCase();
-  const roleLabel = user?.roleNama
-    ? ROLE_LABEL[user.roleNama] ?? user.roleNama
-    : "";
+  const roleLabel = displayRoleLabel(user?.roleNama);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

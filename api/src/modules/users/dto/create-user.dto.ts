@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { passwordSchema } from '@/shared/validators/password.validator'
 
 export const createUserSchema = z.object({
   username: z
@@ -12,11 +13,7 @@ export const createUserSchema = z.object({
   roleId: z.coerce.bigint().positive(),
   unitOrganisasiId: z.coerce.bigint().optional(),
   asnId: z.coerce.bigint().optional(),
-  password: z
-    .string()
-    .min(8)
-    .regex(/^(?=.*[A-Z])(?=.*\d)/, 'Harus ada huruf kapital dan angka')
-    .optional(),
+  password: passwordSchema.optional(),
   isActive: z.boolean().optional().default(true),
 })
 

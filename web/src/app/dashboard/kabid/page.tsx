@@ -11,6 +11,7 @@ import {
   useDashboardPerJenis,
   useDashboardRingkasan,
 } from "@/hooks/useDashboard";
+import { displayTahapLabel } from "@/lib/display-labels";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -184,7 +185,7 @@ export default function DashboardKabidPage() {
                   {(antrian.data ?? []).slice(0, 5).map((item) => (
                     <tr key={item.tahapSaatIni ?? "tanpa-tahap"}>
                       <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] font-medium">
-                        {item.tahapSaatIni ?? "Tanpa tahap"}
+                        {item.tahapSaatIni ? displayTahapLabel(item.tahapSaatIni) : "Tanpa tahap"}
                       </td>
                       <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] text-right">
                         {item._count._all}

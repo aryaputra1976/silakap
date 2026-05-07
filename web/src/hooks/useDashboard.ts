@@ -220,3 +220,109 @@ export const useDashboardRecent = () =>
       return data.data;
     },
   });
+
+// ─── New Dashboard Views hooks ──────────────────────────────────────────────
+
+export interface DashboardPimpinan {
+  totalBulanIni: number;
+  slaCompliancePercent: number;
+  avgWaktuSelesaiHari: number;
+  eskalasiMenunggu: number;
+  volumePerLayanan: { nama: string; total: number }[];
+  kepatuhanPerOperator: { nama: string; persen: number }[];
+  antrianStatus: { menunggu: number; diproses: number; slaKritis: number };
+}
+
+export interface DashboardOperatorKpi {
+  menungguVerifikasi: number;
+  sedangDiproses: number;
+  mendekatiSla: number;
+  selesaiHariIni: number;
+}
+
+export interface AntrianDetailItem {
+  id: string;
+  source?: "layanan" | "peremajaan";
+  detailHref?: string;
+  nomorUsulan: string;
+  asn: { nama: string };
+  jenisLayanan: { nama: string };
+  unitOrganisasi: { singkatan: string };
+  tanggalUsulan: string;
+  status: string;
+  sla: { hariKe: number; totalSla: number; statusSla: "OK" | "Warning" | "Overdue" } | null;
+}
+
+export interface AntrianDetailResponse {
+  total: number;
+  page: number;
+  limit: number;
+  data: AntrianDetailItem[];
+}
+
+export const useDashboardPimpinan = () =>
+  useQuery({
+    queryKey: ["dashboard", "pimpinan"],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: DashboardPimpinan }>("/dashboard/pimpinan");
+      return data.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+export const useDashboardOperatorKpi = (tahap: string) =>
+  useQuery({
+    queryKey: ["dashboard", "operator-kpi", tahap],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: DashboardOperatorKpi }>(
+        "/dashboard/operator-kpi",
+        { params: { tahap } },
+      );
+      return data.data;
+    },
+    staleTime: 60 * 1000,
+  });
+
+export interface EskalasiPeremajaanItem {
+  id: string;
+  namaAsn: string;
+  nipBaru: string;
+  unitOrganisasi: string;
+  namaLayanan: string;
+  tanggalPengajuan: string;
+  hariKe: number;
+  totalSla: number;
+  statusSla: "Warning" | "Overdue";
+  operator: string | null;
+}
+
+export const useEskalasiPeremajaan = () =>
+  useQuery({
+    queryKey: ["dashboard", "eskalasi-peremajaan"],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: EskalasiPeremajaanItem[] }>(
+        "/dashboard/eskalasi-peremajaan",
+      );
+      return data.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+export const useAntrianDetail = (params: {
+  jenisLayananId?: string;
+  unitOrganisasiId?: string;
+  urutan?: string;
+  page?: number;
+  limit?: number;
+}) =>
+  useQuery({
+    queryKey: ["dashboard", "antrian-detail", params],
+    queryFn: async () => {
+      const { data } = await api.get<{ data: AntrianDetailResponse }>(
+        "/dashboard/antrian-detail",
+        { params },
+      );
+      return data.data;
+    },
+    staleTime: 60 * 1000,
+  });

@@ -65,7 +65,14 @@ function RefImportCard({
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{hint}</p>
 
       <div className="flex flex-wrap items-center gap-2">
-        <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+        <input
+          suppressHydrationWarning
+          ref={fileRef}
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          onChange={handleFileChange}
+        />
         <button
           type="button"
           disabled={isPending}

@@ -470,11 +470,18 @@ export const referensiService = {
     return db.refBidangPendidikan.findMany({ orderBy: { nama: 'asc' } })
   },
 
-  jenisLayanan() {
-    return db.refJenisLayanan.findMany({
-      include: { persyaratanLayanan: { orderBy: { urutan: 'asc' } } },
+  async jenisLayanan() {
+    const rows = await db.refJenisLayanan.findMany({
+      include: {
+        persyaratanLayanan: { orderBy: { urutan: 'asc' } },
+        configSla: true,
+      },
       orderBy: { nama: 'asc' },
     })
+    return rows.map((r) => ({
+      ...r,
+      totalSlaHari: r.configSla.reduce((acc, c) => acc + c.slaHari, 0),
+    }))
   },
 
   async createJenisLayanan(dto: CreateJenisLayananDto) {

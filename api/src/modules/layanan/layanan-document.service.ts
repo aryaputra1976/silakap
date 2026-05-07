@@ -1,6 +1,17 @@
+import path from 'node:path'
 import { createHash } from 'crypto'
 import { layananRepository } from './layanan.repository'
 import { AppError } from '@/core/errors/app-error'
+import { env } from '@/core/config/env'
+
+const assertSafePath = (filePath: string): string => {
+  const uploadDir = path.resolve(env.UPLOAD_DIR)
+  const resolved = path.resolve(filePath)
+  if (!resolved.startsWith(uploadDir + path.sep) && resolved !== uploadDir) {
+    throw new AppError('Path dokumen tidak valid', 422)
+  }
+  return resolved
+}
 
 export const layananDocumentService = {
   async upload(usulanId: string, file: any, dto: any, userId: string) {
@@ -22,10 +33,12 @@ export const layananDocumentService = {
 
   async getOutput(usulanId: string) {
     const doc = await layananRepository.getLatestOutput(usulanId)
-    if (!doc) throw new AppError('Dokumen tidak ditemukan', 404)
+    if (!doc || !doc.pathFile) throw new AppError('Dokumen tidak ditemukan', 404)
+
+    const safePath = assertSafePath(doc.pathFile)
 
     return {
-      pathFile: doc.pathFile!,
+      pathFile: safePath,
       namaFile: doc.namaFile!,
       mimeType: 'application/octet-stream',
     }

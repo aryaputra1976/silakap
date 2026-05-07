@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/node'
 import { env } from '@/core/config/env'
 import { errorMiddleware } from '@/core/middleware/error.middleware'
 import { requestIdMiddleware } from '@/core/middleware/request-id.middleware'
+import { rateLimitGlobal } from '@/core/middleware/rate-limit.middleware'
 import { NotFoundError } from '@/core/errors/not-found.error'
 import { openApiDocument, swaggerHtml } from '@/docs/openapi'
 import { router } from '@/routes'
@@ -19,12 +20,26 @@ app.set('json replacer', (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value,
 )
 
-app.use(helmet())
-app.use(cors({ origin: env.CORS_ORIGINS.split(',').map((origin) => origin.trim()) }))
-app.use(express.json({ limit: '10mb' }))
-app.use(express.urlencoded({ extended: true }))
+app.use(helmet({
+  hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+}))
+
+app.use(cors({
+  origin: env.CORS_ORIGINS.split(',').map((origin) => origin.trim()),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+  maxAge: 86_400,
+}))
+
+app.use(express.json({ limit: '100kb' }))
+app.use(express.urlencoded({ extended: true, limit: '100kb' }))
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(requestIdMiddleware)
+app.use(rateLimitGlobal)
 
 app.get('/health', (_req, res) => {
   res.json({

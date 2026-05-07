@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useConfigNotifikasi, useConfigNotifikasiActions } from "@/hooks/useAdmin";
+import { displayRoleLabel } from "@/lib/display-labels";
 
 const roles = ["Pengelola_OPD", "Analis_Pertama", "Analis_Muda", "Analis_Madya", "Kabid", "Kepala_Badan", "Admin_Sistem"];
 const channels = ["InApp", "Email", "WhatsApp", "SMS"];
@@ -30,7 +31,7 @@ export default function PengaturanNotifikasiPage() {
             {channels.map((item) => <option key={item}>{item}</option>)}
           </select>
           <select className="h-[45px] w-full rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={form.penerimaRole} onChange={(event) => setForm((current) => ({ ...current, penerimaRole: event.target.value }))}>
-            {roles.map((item) => <option key={item}>{item}</option>)}
+            {roles.map((item) => <option key={item} value={item}>{displayRoleLabel(item)}</option>)}
           </select>
           <textarea className="min-h-[100px] w-full rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px] py-[10px]" placeholder="Template pesan" value={form.templateMessage} onChange={(event) => setForm((current) => ({ ...current, templateMessage: event.target.value }))} />
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))} /> Aktif</label>
@@ -46,7 +47,7 @@ export default function PengaturanNotifikasiPage() {
                   <tr key={item.id}>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.eventType ?? "-"}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.channel ?? "-"}</td>
-                    <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.penerimaRole ?? "-"}</td>
+                    <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{displayRoleLabel(item.penerimaRole)}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{item.isActive ? "Aktif" : "Nonaktif"}</td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">
                       <button type="button" className="text-primary-500" onClick={() => actions.update.mutate({ id: item.id, body: { isActive: !item.isActive } })}>

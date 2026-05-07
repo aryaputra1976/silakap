@@ -5,7 +5,30 @@ export const layananRepository = {
   findByIdOrThrow: async (id: string) => {
     const data = await db.usulanLayanan.findFirst({
       where: { id, deletedAt: null },
-      include: { jenisLayanan: true },
+      include: {
+        jenisLayanan: {
+          include: {
+            persyaratanLayanan: {
+              orderBy: { urutan: 'asc' as const },
+              select: { id: true, namaPersyaratan: true, isRequired: true, urutan: true },
+            },
+          },
+        },
+        asn: { select: { id: true, nipBaru: true, nama: true, unitOrganisasiId: true } },
+        unitOrganisasi: { select: { id: true, nama: true } },
+        workflowLog: {
+          orderBy: { createdAt: 'asc' as const },
+          include: { dilakukanOleh: { select: { id: true, namaLengkap: true } } },
+        },
+        slaTracker: { orderBy: { masukTahap: 'asc' as const } },
+        dokumen: { orderBy: { createdAt: 'asc' as const } },
+        dokumenOutput: { orderBy: { createdAt: 'desc' as const } },
+        diajukanOleh: { select: { id: true, namaLengkap: true } },
+        usulanRevisi: {
+          orderBy: { nomorRevisi: 'asc' as const },
+          include: { dikembalikanOleh: { select: { namaLengkap: true } } },
+        },
+      },
     })
     if (!data) throw new Error('DATA_NOT_FOUND')
     return data

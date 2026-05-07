@@ -1,4 +1,7 @@
+import fs from 'fs/promises'
+import path from 'path'
 import { Prisma, StatusApproval } from '@prisma/client'
+import { env } from '@/core/config/env'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { buildMeta, getPaginationParams } from '@/core/http/pagination.helper'
@@ -76,6 +79,51 @@ const sanitizePeremajaanData = (data: Record<string, unknown>): Prisma.AsnUnchec
     }
   }
   return sanitized
+}
+
+const buildPeremajaanSnapshot = (asn: unknown, data: Record<string, unknown>): Record<string, unknown> => {
+  return Object.keys(data).reduce<Record<string, unknown>>((acc, key) => {
+    acc[key] = (asn as Record<string, unknown>)[key] ?? null
+    return acc
+  }, {})
+}
+
+type PeremajaanAssignmentRow = {
+  id: bigint
+  ditugaskanKepadaId: string | null
+  ditugaskanAt: Date | null
+  namaLengkap: string | null
+}
+
+type PeremajaanAssignmentOnlyRow = {
+  ditugaskanKepadaId: string | null
+}
+
+const attachPeremajaanAssignments = async <T extends { id: bigint }>(items: T[]) => {
+  if (items.length === 0) return items
+
+  const rows = await db.$queryRaw<PeremajaanAssignmentRow[]>`
+    SELECT
+      p.id,
+      p.ditugaskan_kepada_id AS ditugaskanKepadaId,
+      p.ditugaskan_at AS ditugaskanAt,
+      u.namaLengkap AS namaLengkap
+    FROM asn_peremajaan p
+    LEFT JOIN user u ON u.id = p.ditugaskan_kepada_id
+    WHERE p.id IN (${Prisma.join(items.map((item) => item.id))})
+  `
+  const assignmentMap = new Map(rows.map((row) => [row.id.toString(), row]))
+
+  return items.map((item) => {
+    const row = assignmentMap.get(item.id.toString())
+    return {
+      ...item,
+      ditugaskanAt: row?.ditugaskanAt ?? null,
+      ditugaskanKepada: row?.ditugaskanKepadaId
+        ? { id: row.ditugaskanKepadaId, namaLengkap: row.namaLengkap ?? '-' }
+        : null,
+    }
+  })
 }
 
 export const asnService = {
@@ -197,7 +245,7 @@ export const asnService = {
       where.statusApproval = query.status as StatusApproval
     }
 
-    const [data, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       db.asnPeremajaan.findMany({
         where,
         skip,
@@ -211,6 +259,7 @@ export const asnService = {
       }),
       db.asnPeremajaan.count({ where }),
     ])
+    const data = await attachPeremajaanAssignments(rows)
 
     return { data, meta: buildMeta(total, page, limit) }
   },
@@ -220,20 +269,15 @@ export const asnService = {
     const asn = await asnRepository.findById(dto.asnId)
     if (!asn) throw new AppError('Data ASN tidak ditemukan', 404)
 
-    const sanitized = sanitizePeremajaanData(dto.dataBaru)
-    if (Object.keys(sanitized).length === 0) throw new AppError('Data perubahan tidak valid', 422)
-
-    const dataLama = Object.keys(sanitized).reduce<Record<string, unknown>>((acc, key) => {
-      acc[key] = (asn as unknown as Record<string, unknown>)[key]
-      return acc
-    }, {})
+    if (Object.keys(dto.dataBaru).length === 0) throw new AppError('Data perubahan wajib diisi', 422)
+    const dataLama = buildPeremajaanSnapshot(asn, dto.dataBaru)
 
     const result = await db.asnPeremajaan.create({
       data: {
         asnId: toBigIntId(dto.asnId),
         jenisPerubahan: dto.jenisPerubahan,
         dataLama: dataLama as Prisma.InputJsonObject,
-        dataBaru: sanitized as Prisma.InputJsonObject,
+        dataBaru: dto.dataBaru as Prisma.InputJsonObject,
         dokumenBukti: dto.dokumenBukti,
         catatan: dto.catatan,
         diajukanOlehId: actor.id,
@@ -251,18 +295,107 @@ export const asnService = {
     return result
   },
 
+  async uploadPeremajaanDokumen(file: Express.Multer.File | undefined, actor: Express.Request['user']) {
+    if (!actor) throw new AppError('Unauthorized', 401)
+    if (!file) throw new AppError('File wajib diunggah', 422)
+
+    const fileId = path.basename(file.path)
+    const result = {
+      fileId,
+      namaFile: file.originalname,
+      ukuran: file.size,
+      mimeType: file.mimetype,
+      uploadedAt: new Date().toISOString(),
+    }
+
+    await audit(actor, 'UPLOAD_DOKUMEN_PEREMAJAAN_ASN', actor.id, result as Prisma.InputJsonObject)
+    return result
+  },
+
+  async downloadPeremajaanDokumen(fileId: string, actor: Express.Request['user']) {
+    if (!actor) throw new AppError('Unauthorized', 401)
+    if (!fileId || path.basename(fileId) !== fileId) throw new AppError('Dokumen tidak valid', 422)
+
+    const uploadDir = path.resolve(env.UPLOAD_DIR)
+    const filePath = path.resolve(uploadDir, fileId)
+    if (!filePath.startsWith(`${uploadDir}${path.sep}`)) {
+      throw new AppError('Dokumen tidak valid', 422)
+    }
+
+    const stats = await fs.stat(filePath).catch(() => null)
+    if (!stats?.isFile()) throw new AppError('Dokumen tidak ditemukan', 404)
+
+    await audit(actor, 'DOWNLOAD_DOKUMEN_PEREMAJAAN_ASN', actor.id, { fileId })
+    return { filePath, fileName: fileId }
+  },
+
+  async claimPeremajaan(id: string, actor: Express.Request['user']) {
+    if (!actor) throw new AppError('Unauthorized', 401)
+    const peremajaanId = toBigIntId(id)
+
+    const updated = await db.$executeRaw`
+      UPDATE asn_peremajaan
+      SET ditugaskan_kepada_id = ${actor.id}, ditugaskan_at = NOW(3), updatedAt = NOW(3)
+      WHERE id = ${peremajaanId}
+        AND status_approval = 'Pending'
+        AND (ditugaskan_kepada_id IS NULL OR ditugaskan_kepada_id = ${actor.id})
+    `
+
+    if (updated === 0) {
+      const existing = await db.$queryRaw<Array<{ id: bigint; statusApproval: string; ditugaskanKepadaId: string | null }>>`
+        SELECT id, status_approval AS statusApproval, ditugaskan_kepada_id AS ditugaskanKepadaId
+        FROM asn_peremajaan
+        WHERE id = ${peremajaanId}
+        LIMIT 1
+      `
+      const item = existing[0]
+      if (!item) throw new AppError('Data peremajaan tidak ditemukan', 404)
+      if (item.statusApproval !== StatusApproval.Pending) throw new AppError('Pengajuan sudah diproses', 422)
+      throw new AppError('Tiket sudah diambil operator lain', 409)
+    }
+
+    const row = await db.asnPeremajaan.findUnique({
+      where: { id: peremajaanId },
+      include: {
+        asn: { select: { id: true, nipBaru: true, nama: true } },
+        diajukanOleh: { select: { id: true, namaLengkap: true } },
+        disetujuiOleh: { select: { id: true, namaLengkap: true } },
+      },
+    })
+    if (!row) throw new AppError('Data peremajaan tidak ditemukan', 404)
+
+    await audit(actor, 'CLAIM_PEREMAJAAN_ASN', id, { ditugaskanKepadaId: actor.id })
+    const [result] = await attachPeremajaanAssignments([row])
+    return result
+  },
+
   async approvePeremajaan(id: string, dto: ApprovePeremajaanDto, actor: Express.Request['user']) {
     if (!actor) throw new AppError('Unauthorized', 401)
+    if (dto.statusApproval === StatusApproval.Rejected && !dto.catatan?.trim()) {
+      throw new AppError('Alasan penolakan wajib diisi', 422)
+    }
     const peremajaanId = BigInt(id)
     const existing = await db.asnPeremajaan.findUnique({ where: { id: peremajaanId }, include: { asn: true } })
     if (!existing) throw new AppError('Data peremajaan tidak ditemukan', 404)
     if (existing.statusApproval !== StatusApproval.Pending) throw new AppError('Pengajuan sudah diproses', 422)
 
+    const assignmentRows = await db.$queryRaw<PeremajaanAssignmentOnlyRow[]>`
+      SELECT ditugaskan_kepada_id AS ditugaskanKepadaId
+      FROM asn_peremajaan
+      WHERE id = ${peremajaanId}
+      LIMIT 1
+    `
+    const ditugaskanKepadaId = assignmentRows[0]?.ditugaskanKepadaId ?? null
+    if (!ditugaskanKepadaId) throw new AppError('Ambil tiket terlebih dahulu sebelum memproses', 422)
+    if (ditugaskanKepadaId !== actor.id) throw new AppError('Tiket sedang ditangani operator lain', 403)
+
     const approved = dto.statusApproval === StatusApproval.Approved
     const result = await db.$transaction(async (tx) => {
       if (approved) {
         const updateData = sanitizePeremajaanData(existing.dataBaru as Record<string, unknown>)
-        await tx.asn.update({ where: { id: existing.asnId }, data: updateData })
+        if (Object.keys(updateData).length > 0) {
+          await tx.asn.update({ where: { id: existing.asnId }, data: updateData })
+        }
         await tx.asnRiwayat.create({
           data: {
             asnId: existing.asnId,

@@ -109,4 +109,45 @@ export const dashboardController = {
       next(e)
     }
   },
+
+  // ─── New Dashboard Views ─────────────────────────────────────────────────
+
+  pimpinan: async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      sendSuccess(res, await dashboardService.pimpinan())
+    } catch (e) {
+      next(e)
+    }
+  },
+
+  operatorKpi: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tahap = (req.query.tahap as string) ?? 'AP'
+      sendSuccess(res, await dashboardService.operatorKpi(tahap))
+    } catch (e) {
+      next(e)
+    }
+  },
+
+  eskalasiPeremajaan: async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      sendSuccess(res, await dashboardService.eskalasiPeremajaan())
+    } catch (e) {
+      next(e)
+    }
+  },
+
+  antrianDetail: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      sendSuccess(res, await dashboardService.antrianDetail({
+        jenisLayananId: req.query.jenisLayananId as string | undefined,
+        unitOrganisasiId: req.query.unitOrganisasiId as string | undefined,
+        urutan: (req.query.urutan as string) ?? 'terlama',
+        page: Number(req.query.page ?? 1),
+        limit: Number(req.query.limit ?? 20),
+      }))
+    } catch (e) {
+      next(e)
+    }
+  },
 }

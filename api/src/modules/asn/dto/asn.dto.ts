@@ -61,10 +61,20 @@ export const createPeremajaanSchema = z.object({
   catatan: optionalString(),
 })
 
-export const approvePeremajaanSchema = z.object({
-  statusApproval: z.enum(['Approved', 'Rejected']).default('Approved'),
-  catatan: optionalString(),
-})
+export const approvePeremajaanSchema = z
+  .object({
+    statusApproval: z.enum(['Approved', 'Rejected']).default('Approved'),
+    catatan: optionalString(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.statusApproval === 'Rejected' && !value.catatan?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['catatan'],
+        message: 'Alasan penolakan wajib diisi',
+      })
+    }
+  })
 
 export type CreateAsnDto = z.infer<typeof createAsnSchema>
 export type UpdateAsnDto = z.infer<typeof updateAsnSchema>

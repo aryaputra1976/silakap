@@ -60,4 +60,28 @@ export const dashboardService = {
   async rankingOpd(limit: number) {
     return dashboardRepository.rankingOpd(limit)
   },
+
+  // ─── New Dashboard Views ─────────────────────────────────────────────────
+
+  async pimpinan() {
+    return dashboardRepository.pimpinan()
+  },
+
+  async operatorKpi(tahap: string) {
+    return dashboardRepository.operatorKpi(tahap)
+  },
+
+  async eskalasiPeremajaan() {
+    return dashboardRepository.eskalasiPeremajaan()
+  },
+
+  async antrianDetail(params: {
+    jenisLayananId?: string
+    unitOrganisasiId?: string
+    urutan?: string
+    page: number
+    limit: number
+  }) {
+    return dashboardRepository.antrianDetail(params)
+  },
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import StatusBadge from "@/components/silakap/StatusBadge";
 import { downloadDokumenOutput, useLayananList } from "@/hooks/useLayanan";
 import { useState } from "react";
+import { displayTahapLabel } from "@/lib/display-labels";
 
 export default function LayananFilteredList({
   title,
@@ -85,7 +86,7 @@ export default function LayananFilteredList({
                       <StatusBadge status={item.status} />
                     </td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">
-                      {item.tahapSaatIni ?? "-"}
+                      {displayTahapLabel(item.tahapSaatIni)}
                     </td>
                     <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] whitespace-nowrap">
                       {new Date(item.tanggalUsulan).toLocaleDateString("id-ID")}

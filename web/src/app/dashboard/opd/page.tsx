@@ -1,130 +1,91 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ApexOptions } from "apexcharts";
-import StatCard from "@/components/silakap/StatCard";
-import { AktivitasTable } from "@/components/silakap/AktivitiasTable";
-import {
-  useDashboardAktivitas,
-  useDashboardLaporan,
-  useDashboardRingkasan,
-} from "@/hooks/useDashboard";
+import { useRouter } from "next/navigation";
+import LayananCardGrid from "@/components/silakap/LayananCardGrid";
+import { useJenisLayanan } from "@/hooks/useLayanan";
+import { useAsnDetail } from "@/hooks/useAsn";
 import { useAuthStore } from "@/store/auth.store";
 
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
-
-const formatDateLabel = (value: string) =>
-  new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(value));
-
-const LoadingCards = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
-    {Array.from({ length: 4 }).map((_, index) => (
-      <div
-        className="animate-pulse rounded-xl bg-gray-200 dark:bg-[#172036] h-24"
-        key={index}
-      />
-    ))}
-  </div>
-);
+function Initials({ nama }: { nama: string }) {
+  const parts = nama.trim().split(/\s+/);
+  const letters = parts.length >= 2
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : nama.slice(0, 2).toUpperCase();
+  return (
+    <div className="w-12 h-12 rounded-full bg-primary-500 text-white flex items-center justify-center text-lg font-bold shrink-0">
+      {letters}
+    </div>
+  );
+}
 
 export default function DashboardOpdPage() {
-  const user = useAuthStore((state) => state.user);
-  const ringkasan = useDashboardRingkasan(user?.unitOrganisasiId ?? undefined);
-  const laporan = useDashboardLaporan();
-  const aktivitas = useDashboardAktivitas();
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const { data: jenisLayananList, isLoading } = useJenisLayanan();
+  const { data: asn } = useAsnDetail(user?.asnId ?? "");
 
-  const isLoading =
-    ringkasan.isLoading || laporan.isLoading || aktivitas.isLoading;
-  const isError = ringkasan.isError || laporan.isError || aktivitas.isError;
-  const laporanData = laporan.data ?? [];
-
-  const chartOptions: ApexOptions = {
-    chart: { toolbar: { show: true } },
-    colors: ["#605DFF", "#37D80A"],
-    dataLabels: { enabled: false },
-    plotOptions: { bar: { columnWidth: "45%" } },
-    xaxis: {
-      categories: laporanData.map((item) => formatDateLabel(item.tanggalLaporan)),
-      labels: { style: { colors: "#8695AA", fontSize: "12px" } },
-    },
-    yaxis: { labels: { style: { colors: "#64748B", fontSize: "12px" } } },
-    grid: { borderColor: "#ECEEF2" },
-    legend: { position: "top", labels: { colors: "#64748B" } },
-  };
-
-  const chartSeries = [
-    { name: "Usulan Masuk", data: laporanData.map((item) => item.usulanMasuk) },
-    {
-      name: "Usulan Selesai",
-      data: laporanData.map((item) => item.usulanSelesai),
-    },
-  ];
+  const namaLengkap = user?.namaLengkap ?? "—";
+  const nip = asn?.nipBaru ?? "—";
+  const unitNama = asn?.unitOrganisasi?.nama ?? user?.unitOrganisasiId ?? "—";
 
   return (
-    <div className="space-y-[25px]">
-      <div>
-        <h1 className="!mb-1">Dashboard OPD</h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Unit organisasi: {user?.unitOrganisasiId ?? "Belum tersedia"}
-        </p>
+    <div className="space-y-6">
+      {/* Profile header card */}
+      <div className="trezo-card bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* User info */}
+          <div className="flex items-center gap-4">
+            <Initials nama={namaLengkap} />
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white !mb-0">
+                {namaLengkap}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                NIP {nip} — {unitNama}
+              </p>
+            </div>
+          </div>
+
+          {/* Nav buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => router.push("/layanan/buat")}
+              className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-gray-700 dark:text-gray-300 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            >
+              Ajukan layanan
+            </button>
+            <button
+              onClick={() => router.push("/layanan")}
+              className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-gray-700 dark:text-gray-300 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            >
+              Tiket saya
+            </button>
+            <button
+              onClick={() => router.push("/profil")}
+              className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-gray-700 dark:text-gray-300 hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            >
+              Profil
+            </button>
+          </div>
+        </div>
       </div>
 
-      {isError ? (
-        <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">
-          Gagal memuat data
-        </div>
-      ) : null}
+      {/* Service cards */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
+          Pilih jenis layanan yang ingin diajukan
+        </h3>
 
-      {isLoading ? (
-        <LoadingCards />
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
-            <StatCard
-              label="Draft"
-              value={ringkasan.data?.totalDraft ?? 0}
-              icon="draft"
-              color="gray"
-            />
-            <StatCard
-              label="Dalam Proses"
-              value={ringkasan.data?.totalDalamProses ?? 0}
-              icon="pending_actions"
-              color="blue"
-            />
-            <StatCard
-              label="Dikembalikan"
-              value={ringkasan.data?.totalDikembalikan ?? 0}
-              icon="keyboard_return"
-              color="yellow"
-            />
-            <StatCard
-              label="Selesai"
-              value={ringkasan.data?.totalSelesai ?? 0}
-              icon="task_alt"
-              color="green"
-            />
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-xl bg-gray-100 dark:bg-[#172036] animate-pulse" />
+            ))}
           </div>
-
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-            <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-              <h5 className="!mb-0">Usulan 7 Hari Terakhir</h5>
-            </div>
-            <Chart
-              options={chartOptions}
-              series={chartSeries}
-              type="bar"
-              height={350}
-              width="100%"
-            />
-          </div>
-
-          <AktivitasTable data={aktivitas.data ?? []} />
-        </>
-      )}
+        ) : (
+          <LayananCardGrid items={jenisLayananList ?? []} />
+        )}
+      </div>
     </div>
   );
 }

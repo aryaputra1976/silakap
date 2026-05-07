@@ -6,6 +6,7 @@ import {
   useDashboardPerJenis,
   useDashboardRingkasan,
 } from "@/hooks/useDashboard";
+import { displayTahapLabel } from "@/lib/display-labels";
 
 export default function StatistikPage() {
   const ringkasan = useDashboardRingkasan();
@@ -34,7 +35,7 @@ export default function StatistikPage() {
           <div className="space-y-3">
             {(antrian.data ?? []).map((item) => (
               <div className="flex items-center justify-between rounded-md bg-gray-50 dark:bg-[#15203c] px-4 py-3" key={item.tahapSaatIni ?? "Diajukan"}>
-                <span>{item.tahapSaatIni ?? "Diajukan"}</span>
+                <span>{item.tahapSaatIni ? displayTahapLabel(item.tahapSaatIni) : "Diajukan"}</span>
                 <strong>{item._count._all}</strong>
               </div>
             ))}

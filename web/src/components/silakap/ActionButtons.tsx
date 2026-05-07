@@ -13,18 +13,15 @@ interface ActionButtonsProps {
 
 type ModalAction = "teruskan" | "kembalikan" | "setujui" | "batal" | null;
 
-const canReturnRoles = new Set([
-  "Analis_Pertama",
-  "Analis_Muda",
-  "Analis_Madya",
-  "Kabid",
-  "Kepala_Badan",
-]);
-
-const roleMatchesTahap = (role: string, tahap: string | null) =>
+const analystRoleMatchesTahap = (role: string, tahap: string | null) =>
   (tahap === "AP" && role === "Analis_Pertama") ||
   (tahap === "AM" && role === "Analis_Muda") ||
   (tahap === "AD" && role === "Analis_Madya");
+
+const roleMatchesActiveTahap = (role: string, tahap: string | null) =>
+  analystRoleMatchesTahap(role, tahap) ||
+  (tahap === "Kabid" && role === "Kabid") ||
+  (tahap === "KepalaBadan" && role === "Kepala_Badan");
 
 const modalConfig: Record<
   Exclude<ModalAction, null>,
@@ -77,9 +74,8 @@ export default function ActionButtons({
   const showSubmit = usulan.status === "Draft" && userRole === "Pengelola_OPD";
   const showTerima =
     usulan.status === "Diajukan" && userRole === "Analis_Pertama";
-  const showTeruskan = roleMatchesTahap(userRole, usulan.tahapSaatIni);
-  const showKembalikan =
-    Boolean(usulan.tahapSaatIni) && canReturnRoles.has(userRole);
+  const showTeruskan = analystRoleMatchesTahap(userRole, usulan.tahapSaatIni);
+  const showKembalikan = roleMatchesActiveTahap(userRole, usulan.tahapSaatIni);
   const showSetujui =
     (usulan.tahapSaatIni === "Kabid" && userRole === "Kabid") ||
     (usulan.tahapSaatIni === "KepalaBadan" && userRole === "Kepala_Badan");
@@ -187,7 +183,7 @@ export default function ActionButtons({
             disabled={loading}
           >
             <i className="material-symbols-outlined !text-[18px]">refresh</i>
-            Resubmit
+            Kirim Ulang
           </button>
         ) : null}
         {!showSubmit &&
