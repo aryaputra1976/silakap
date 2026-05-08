@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -252,6 +253,33 @@ export default function LayananDetailPage() {
                     <p className="mt-2 text-sm">
                       Catatan pengembali: {latestReturnNote}
                     </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {usulan.status === "Ditolak" ? (
+            <div className="rounded-md border border-danger-200 bg-danger-50 px-4 py-4 dark:border-danger-800/40 dark:bg-danger-900/20">
+              <div className="flex items-start gap-3">
+                <i className="material-symbols-outlined !text-[22px] text-danger-500 shrink-0 mt-0.5">cancel</i>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-danger-700 dark:text-danger-300">
+                    Usulan ini telah ditolak/dibatalkan dan tidak dapat diproses lagi.
+                  </p>
+                  {usulan.alasanPenolakan ? (
+                    <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">
+                      Alasan: {usulan.alasanPenolakan}
+                    </p>
+                  ) : null}
+                  {user?.roleNama === "Pengelola_OPD" ? (
+                    <Link
+                      href="/layanan/buat"
+                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-400 transition-colors"
+                    >
+                      <i className="material-symbols-outlined !text-[16px]">add</i>
+                      Ajukan Usulan Baru
+                    </Link>
                   ) : null}
                 </div>
               </div>

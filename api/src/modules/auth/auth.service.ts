@@ -7,6 +7,7 @@ import { logger } from '@/core/logger/logger'
 import { comparePassword, hashPassword, isPasswordInHistory } from '@/core/security/password.helper'
 import { signAccessToken, signRefreshToken, verifyRefreshToken, signEmailVerificationToken, verifyEmailVerificationToken } from '@/core/security/jwt.helper'
 import { ROLES } from '@/shared/constants'
+import { emailService, emailTemplates } from '@/modules/email'
 import type { AuthUserResponseDto, LoginResponseDto, RefreshResponseDto } from './dto/auth-response.dto'
 import type { RegisterDto } from './dto/register.dto'
 
@@ -135,8 +136,6 @@ const sendPostRegisterEmails = async (
   unitNama: string,
 ): Promise<void> => {
   try {
-    const { emailService, emailTemplates } = await import('@/modules/email')
-
     // 1. Kirim link verifikasi email ke pendaftar
     const verificationToken = signEmailVerificationToken(userId, email)
     const verificationUrl = `${env.APP_URL}/verify-email?token=${verificationToken}`
@@ -193,7 +192,6 @@ const sendLoginFromNewIpNotification = async (
   userAgent?: string,
 ): Promise<void> => {
   try {
-    const { emailService, emailTemplates } = await import('@/modules/email')
     const waktu = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Makassar', dateStyle: 'full', timeStyle: 'short' })
     const template = emailTemplates.loginFromNewIp({
       namaLengkap: user.namaLengkap,
@@ -212,7 +210,6 @@ const sendAccountLockedNotification = async (
   user: { id: string; namaLengkap: string; email: string },
 ): Promise<void> => {
   try {
-    const { emailService, emailTemplates } = await import('@/modules/email')
     const template = emailTemplates.accountLocked({
       namaLengkap: user.namaLengkap,
       maxAttempts: env.MAX_LOGIN_ATTEMPTS,
@@ -229,7 +226,6 @@ const sendSessionRevokedNotification = async (
   revokedCount: number,
 ): Promise<void> => {
   try {
-    const { emailService, emailTemplates } = await import('@/modules/email')
     const template = emailTemplates.sessionRevoked({
       namaLengkap: user.namaLengkap,
       revokedCount,

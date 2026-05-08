@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import StatusBadge from "@/components/silakap/StatusBadge";
 import { useLayananList } from "@/hooks/useLayanan";
 import { displayStatusLabel, displayTahapLabel } from "@/lib/display-labels";
+import { getVisiblePages } from "@/lib/pagination";
 import { useAuthStore } from "@/store/auth.store";
 
 const STATUS_OPTIONS = [
@@ -55,24 +56,6 @@ const normalizePage = (value: string | null) => {
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 };
 
-const getVisiblePages = (current: number, total: number) => {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, index) => index + 1);
-  }
-
-  const pages = new Set([1, 2, total, current - 1, current, current + 1]);
-  const sorted = Array.from(pages)
-    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= total)
-    .sort((a, b) => a - b);
-
-  return sorted.reduce<(number | "ellipsis")[]>((items, pageNumber, index) => {
-    if (index > 0 && pageNumber - sorted[index - 1] > 1) {
-      items.push("ellipsis");
-    }
-    items.push(pageNumber);
-    return items;
-  }, []);
-};
 
 export default function LayananPage() {
   const router = useRouter();

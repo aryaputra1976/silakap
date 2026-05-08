@@ -20,6 +20,24 @@ const corsSafe = (): boolean => {
   return origins.every((origin) => origin.startsWith('https://')) && !origins.includes('*')
 }
 
+const localCorsSafe = (): boolean => {
+  const origins = env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+  return origins.every((origin) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) && !origins.includes('*')
+}
+
+const corsStatus = (): AuditStatus => {
+  if (corsSafe()) return 'ok'
+  if (env.NODE_ENV !== 'production' && localCorsSafe()) return 'warning'
+  return 'critical'
+}
+
+const corsMessage = (): string => {
+  const status = corsStatus()
+  if (status === 'ok') return 'CORS hanya HTTPS eksplisit'
+  if (status === 'warning') return 'CORS local development memakai localhost'
+  return 'CORS production harus HTTPS eksplisit dan tidak wildcard'
+}
+
 export const auditEnv = (): { status: AuditStatus; items: AuditItem[] } => {
   const items: AuditItem[] = [
     {
@@ -44,8 +62,8 @@ export const auditEnv = (): { status: AuditStatus; items: AuditItem[] } => {
     },
     {
       key: 'CORS_ORIGINS',
-      status: corsSafe() ? 'ok' : 'critical',
-      message: corsSafe() ? 'CORS hanya HTTPS eksplisit' : 'CORS production harus HTTPS eksplisit dan tidak wildcard',
+      status: corsStatus(),
+      message: corsMessage(),
     },
     {
       key: 'SENTRY_DSN',

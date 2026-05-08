@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -10,6 +10,14 @@ import type { ApiResponse, User } from "@/types/models";
 
 type LoginUser = User & { role?: { nama?: string | null } | null };
 
+const parseRetrySeconds = (message?: string): number | null => {
+  const match = message?.match(/dalam\s+(\d+)\s+detik/i);
+  if (!match) return null;
+
+  const seconds = Number(match[1]);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
+};
+
 const SignInForm: React.FC = () => {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -17,9 +25,26 @@ const SignInForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [retrySeconds, setRetrySeconds] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (retrySeconds === null) return undefined;
+    if (retrySeconds <= 0) {
+      setRetrySeconds(null);
+      setError("");
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setRetrySeconds((current) => (current === null ? null : current - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [retrySeconds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (retrySeconds !== null) return;
     setLoading(true);
     setError("");
     try {
@@ -35,11 +60,17 @@ const SignInForm: React.FC = () => {
       router.push(resolveDashboardPath(user.roleNama));
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setRetrySeconds(parseRetrySeconds(msg));
       setError(msg ?? "Username atau password salah");
     } finally {
       setLoading(false);
     }
   };
+
+  const displayedError =
+    retrySeconds !== null
+      ? `Terlalu banyak percobaan. Silakan coba lagi dalam ${retrySeconds} detik.`
+      : error;
 
   return (
     <div className="auth-main-content min-h-screen flex overflow-hidden">
@@ -105,10 +136,10 @@ const SignInForm: React.FC = () => {
             </div>
 
             {/* Error */}
-            {error && (
+            {displayedError && (
               <div className="mb-5 py-3 px-4 text-red-600 bg-red-50 border border-red-100 rounded-xl text-sm flex items-start gap-2">
                 <i className="ri-error-warning-line mt-0.5 shrink-0" />
-                <span>{error}</span>
+                <span>{displayedError}</span>
               </div>
             )}
 
@@ -160,7 +191,7 @@ const SignInForm: React.FC = () => {
               {/* Tombol Masuk */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || retrySeconds !== null}
                 className="w-full h-[52px] rounded-full font-semibold text-sm text-white tracking-wide transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-cyan-200/60"
                 style={{ background: loading ? "#67c8d8" : "linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)" }}
               >

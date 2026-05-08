@@ -40,3 +40,4 @@ Thumbs.db
 
 # Markdown docs (tidak perlu di-commit)
 *.md
+!deploy/STAGING_UAT_CHECKLIST.md

@@ -283,6 +283,50 @@ async function main(): Promise<void> {
         update: {},
       })
     }
+
+    const workflowTransitions = [
+      { dariTahap: null, keTahap: 'AP' as const, aksi: 'TERIMA', roleName: 'Analis_Pertama', urutan: 1 },
+      { dariTahap: 'AP' as const, keTahap: 'AM' as const, aksi: 'TERUSKAN', roleName: 'Analis_Pertama', urutan: 2 },
+      { dariTahap: 'AM' as const, keTahap: 'AD' as const, aksi: 'TERUSKAN', roleName: 'Analis_Muda', urutan: 3 },
+      { dariTahap: 'AD' as const, keTahap: 'Kabid' as const, aksi: 'TERUSKAN', roleName: 'Analis_Madya', urutan: 4 },
+      { dariTahap: 'Kabid' as const, keTahap: 'KepalaBadan' as const, aksi: 'TERUSKAN', roleName: 'Kabid', urutan: 5 },
+      { dariTahap: 'Kabid' as const, keTahap: null, aksi: 'SETUJUI', roleName: 'Kabid', urutan: 6 },
+      { dariTahap: 'KepalaBadan' as const, keTahap: null, aksi: 'SETUJUI', roleName: 'Kepala_Badan', urutan: 7 },
+      { dariTahap: 'AP' as const, keTahap: 'AP' as const, aksi: 'KEMBALIKAN', roleName: 'Analis_Pertama', urutan: 8 },
+      { dariTahap: 'AM' as const, keTahap: 'AP' as const, aksi: 'KEMBALIKAN', roleName: 'Analis_Muda', urutan: 9 },
+      { dariTahap: 'AD' as const, keTahap: 'AM' as const, aksi: 'KEMBALIKAN', roleName: 'Analis_Madya', urutan: 10 },
+      { dariTahap: 'Kabid' as const, keTahap: 'AD' as const, aksi: 'KEMBALIKAN', roleName: 'Kabid', urutan: 11 },
+      { dariTahap: 'KepalaBadan' as const, keTahap: 'Kabid' as const, aksi: 'KEMBALIKAN', roleName: 'Kepala_Badan', urutan: 12 },
+    ]
+
+    for (const transition of workflowTransitions) {
+      const existing = await db.workflowTransition.findFirst({
+        where: {
+          jenisLayananId: item.id,
+          dariTahap: transition.dariTahap,
+          aksi: transition.aksi,
+          roleName: transition.roleName,
+        },
+      })
+
+      if (existing) {
+        await db.workflowTransition.update({
+          where: { id: existing.id },
+          data: {
+            keTahap: transition.keTahap,
+            urutan: transition.urutan,
+            isActive: true,
+          },
+        })
+      } else {
+        await db.workflowTransition.create({
+          data: {
+            jenisLayananId: item.id,
+            ...transition,
+          },
+        })
+      }
+    }
   }
 
   // ── ASN Demo ────────────────────────────────────────────────────────────
