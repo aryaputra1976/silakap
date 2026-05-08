@@ -1,5 +1,6 @@
 import { Prisma, StatusUsulan, TahapUsulan } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
+import { AppError } from '@/core/errors/app-error'
 
 export const layananRepository = {
   findByIdOrThrow: async (id: string) => {
@@ -30,7 +31,7 @@ export const layananRepository = {
         },
       },
     })
-    if (!data) throw new Error('DATA_NOT_FOUND')
+    if (!data) throw new AppError('Data tidak ditemukan', 404)
     return data
   },
 

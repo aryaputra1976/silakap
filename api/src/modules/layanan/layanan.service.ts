@@ -13,11 +13,17 @@ import { workflowDecision } from '@/modules/workflow/workflow.decision'
 import { tutupSlaTracker } from './engine/sla.engine'
 import { buatSlaTracker } from './engine/sla.engine'
 import { notificationEngine } from './engine/notification.engine'
+import type { CreateUsulanDto, UploadDokumenDto } from './dto/layanan.dto'
 
 type Actor = {
   id: string
   roleName: string
   unitOrganisasiId?: string
+}
+
+type LayananListQuery = {
+  page?: unknown
+  limit?: unknown
 }
 
 const ROLES_ALL_ACCESS = [
@@ -41,7 +47,7 @@ const assertCanAccessUsulan = (
 }
 
 export const layananService = {
-  async list(userId: string, role: string, unitOrganisasiId: string | undefined, query: any) {
+  async list(userId: string, role: string, unitOrganisasiId: string | undefined, query: LayananListQuery) {
     const { page, limit, skip } = getPaginationParams(query)
     const where: Prisma.UsulanLayananWhereInput = { deletedAt: null }
 
@@ -66,7 +72,7 @@ export const layananService = {
     return { ...rest, revisi: usulanRevisi }
   },
 
-  async create(dto: any, actor: Actor) {
+  async create(dto: CreateUsulanDto, actor: Actor) {
     layananAccessPolicy.canCreate(actor.roleName)
 
     const nomorUsulan = await layananNumberingService.generate()
@@ -83,7 +89,7 @@ export const layananService = {
     })
   },
 
-  async uploadDokumen(id: string, file: any, dto: any, actor: Actor) {
+  async uploadDokumen(id: string, file: Express.Multer.File | undefined, dto: UploadDokumenDto, actor: Actor) {
     layananAccessPolicy.canUpload(actor.roleName)
     const usulan = await layananRepository.findByIdOrThrow(id)
     assertCanAccessUsulan(actor, usulan.unitOrganisasiId)
@@ -157,7 +163,7 @@ async teruskan(id: string, catatan: string, actor: Actor) {
     await logWorkflow(id, decision.from, decision.to, 'TERUSKAN', actor.id, catatan, tx)
 
     // 🔥 NOTIFICATION
-    await notificationEngine.notifyNextRole(actor.roleName, `Usulan ${id} masuk ke tahap berikutnya`)
+    await notificationEngine.notifyNextRole(decision.to, `Usulan ${id} masuk ke tahap berikutnya`)
 
     return updated
   })

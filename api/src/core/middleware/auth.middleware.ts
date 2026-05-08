@@ -5,9 +5,15 @@ import { env } from '@/core/config/env'
 import { verifyAccessToken } from '@/core/security/jwt.helper'
 
 // Endpoint yang boleh diakses walau password sudah kadaluarsa
+const expiryExemptPaths = new Set([
+  `${env.API_PREFIX}/auth/change-password`,
+  `${env.API_PREFIX}/auth/logout`,
+  `${env.API_PREFIX}/auth/me`,
+])
+
 const isExemptFromExpiry = (req: Request): boolean => {
-  const url = req.originalUrl.split('?')[0]
-  return url.endsWith('/change-password') || url.endsWith('/logout') || url.endsWith('/auth/me')
+  const path = req.originalUrl.split('?')[0]
+  return expiryExemptPaths.has(path)
 }
 
 export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {

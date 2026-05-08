@@ -1,7 +1,12 @@
+import type { TahapUsulan } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
+import { roleByTahap } from '@/modules/workflow/workflow.service'
 
 export const notificationEngine = {
-  async notifyNextRole(roleName: string, message: string) {
+  async notifyNextRole(tahap: TahapUsulan | null, message: string) {
+    if (!tahap) return
+
+    const roleName = roleByTahap[tahap]
     const users = await db.user.findMany({
       where: {
         role: { nama: roleName },
