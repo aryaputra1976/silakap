@@ -14,6 +14,7 @@ import { tutupSlaTracker } from './engine/sla.engine'
 import { buatSlaTracker } from './engine/sla.engine'
 import { notificationEngine } from './engine/notification.engine'
 import type { CreateUsulanDto, UploadDokumenDto } from './dto/layanan.dto'
+import { ROLES } from '@/shared/constants'
 
 type Actor = {
   id: string
@@ -26,20 +27,20 @@ type LayananListQuery = {
   limit?: unknown
 }
 
-const ROLES_ALL_ACCESS = [
-  'Analis_Pertama',
-  'Analis_Muda',
-  'Analis_Madya',
-  'Kabid',
-  'Kepala_Badan',
-  'Admin_Sistem',
-]
+const ROLES_ALL_ACCESS = new Set<string>([
+  ROLES.ANALIS_PERTAMA,
+  ROLES.ANALIS_MUDA,
+  ROLES.ANALIS_MADYA,
+  ROLES.KABID,
+  ROLES.KEPALA_BADAN,
+  ROLES.ADMIN_SISTEM,
+])
 
 const assertCanAccessUsulan = (
   actor: Actor,
   usulanUnitOrganisasiId: bigint | string | null,
 ): void => {
-  if (ROLES_ALL_ACCESS.includes(actor.roleName)) return
+  if (ROLES_ALL_ACCESS.has(actor.roleName)) return
   const unitId = usulanUnitOrganisasiId?.toString()
   if (!actor.unitOrganisasiId || actor.unitOrganisasiId !== unitId) {
     throw new AppError('Anda tidak memiliki akses ke usulan ini', 403)

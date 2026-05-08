@@ -49,21 +49,31 @@ export async function tutupSlaTracker(
   tahap: TahapUsulan,
   client: Prisma.TransactionClient = db,
 ): Promise<void> {
-  const trackers = await client.slaTracker.findMany({
-    where: { usulanId, tahapSaat: tahap, selesaiAt: null },
-  })
-
   const now = new Date()
 
-  for (const tracker of trackers) {
-    const overdue = tracker.slaHabisAt && now > tracker.slaHabisAt
+  await client.slaTracker.updateMany({
+    where: {
+      usulanId,
+      tahapSaat: tahap,
+      selesaiAt: null,
+      slaHabisAt: { lt: now },
+    },
+    data: {
+      selesaiAt: now,
+      statusSla: StatusSla.Overdue,
+    },
+  })
 
-    await client.slaTracker.update({
-      where: { id: tracker.id },
-      data: {
-        selesaiAt: now,
-        statusSla: overdue ? StatusSla.Overdue : StatusSla.OK,
-      },
-    })
-  }
+  await client.slaTracker.updateMany({
+    where: {
+      usulanId,
+      tahapSaat: tahap,
+      selesaiAt: null,
+      slaHabisAt: { gte: now },
+    },
+    data: {
+      selesaiAt: now,
+      statusSla: StatusSla.OK,
+    },
+  })
 }

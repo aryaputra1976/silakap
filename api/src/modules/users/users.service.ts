@@ -278,10 +278,7 @@ export const usersService = {
     if (actor?.id === id) throw new AppError('Anda tidak dapat menghapus akun sendiri', 422)
 
     await db.$transaction([
-      db.user.update({
-        where: { id },
-        data: { deletedAt: new Date(), isActive: false },
-      }),
+      usersRepository.softDelete(id),
       db.refreshToken.updateMany({
         where: { userId: id, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -300,10 +297,7 @@ export const usersService = {
     const temporaryPassword = randomPassword()
     const passwordHash = await hashPassword(temporaryPassword)
     await db.$transaction([
-      db.user.update({
-        where: { id },
-        data: { passwordHash, mustChangePassword: true, passwordChangedAt: new Date() },
-      }),
+      usersRepository.resetPassword(id, passwordHash),
       db.userPasswordHistory.create({ data: { userId: id, passwordHash } }),
       db.refreshToken.updateMany({
         where: { userId: id, revokedAt: null },

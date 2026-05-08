@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import type { User, Role } from '@prisma/client'
+import type { User, Role, Prisma } from '@prisma/client'
 import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { env } from '@/core/config/env'
@@ -44,6 +44,40 @@ const toAuthUser = (user: UserWithRole): AuthUserResponseDto => ({
   unitOrganisasiId: user.unitOrganisasiId?.toString(),
   mustChangePassword: user.mustChangePassword,
 })
+
+type AuditWriter = {
+  auditLog: {
+    create: (args: Prisma.AuditLogCreateArgs) => Promise<unknown>
+  }
+}
+
+type AuthAuditInput = {
+  userId?: string | null
+  userNama?: string | null
+  action: string
+  entityId: string
+  ipAddress?: string
+  userAgent?: string
+  newValues?: Prisma.InputJsonValue
+}
+
+const authAuditData = (input: AuthAuditInput): Prisma.AuditLogUncheckedCreateInput => ({
+  userId: input.userId,
+  userNama: input.userNama,
+  action: input.action,
+  entityType: 'User',
+  entityId: input.entityId,
+  ipAddress: input.ipAddress,
+  userAgent: input.userAgent,
+  newValues: input.newValues,
+})
+
+const writeAuthAudit = async (
+  input: AuthAuditInput,
+  client: AuditWriter = db,
+): Promise<void> => {
+  await client.auditLog.create({ data: authAuditData(input) })
+}
 
 const issueTokens = async (
   user: UserWithRole,
@@ -299,24 +333,21 @@ export const authService = {
       })
 
       await tx.userPasswordHistory.create({ data: { userId: registeredUser.id, passwordHash } })
-      await tx.auditLog.create({
-        data: {
-          userId: registeredUser.id,
-          userNama: registeredUser.namaLengkap,
-          action: 'REGISTER_USER',
-          entityType: 'User',
-          entityId: registeredUser.id,
-          ipAddress,
-          userAgent,
-          newValues: {
-            username: registeredUser.username,
-            email: registeredUser.email,
-            roleId: registeredUser.roleId.toString(),
-            unitOrganisasiId: registeredUser.unitOrganisasiId?.toString() ?? null,
-            isActive: registeredUser.isActive,
-          },
+      await writeAuthAudit({
+        userId: registeredUser.id,
+        userNama: registeredUser.namaLengkap,
+        action: 'REGISTER_USER',
+        entityId: registeredUser.id,
+        ipAddress,
+        userAgent,
+        newValues: {
+          username: registeredUser.username,
+          email: registeredUser.email,
+          roleId: registeredUser.roleId.toString(),
+          unitOrganisasiId: registeredUser.unitOrganisasiId?.toString() ?? null,
+          isActive: registeredUser.isActive,
         },
-      })
+      }, tx)
 
       return registeredUser
     })
@@ -350,14 +381,11 @@ export const authService = {
       data: { emailVerifiedAt: new Date() },
     })
 
-    await db.auditLog.create({
-      data: {
-        userId: user.id,
-        userNama: user.namaLengkap,
-        action: 'VERIFY_EMAIL',
-        entityType: 'User',
-        entityId: user.id,
-      },
+    await writeAuthAudit({
+      userId: user.id,
+      userNama: user.namaLengkap,
+      action: 'VERIFY_EMAIL',
+      entityId: user.id,
     })
 
     return { alreadyVerified: false }
@@ -416,16 +444,13 @@ export const authService = {
 
     const tokens = await issueTokens(updatedUser, ipAddress, userAgent)
 
-    await db.auditLog.create({
-      data: {
-        userId: updatedUser.id,
-        userNama: updatedUser.namaLengkap,
-        action: 'LOGIN',
-        entityType: 'User',
-        entityId: updatedUser.id,
-        ipAddress,
-        userAgent,
-      },
+    await writeAuthAudit({
+      userId: updatedUser.id,
+      userNama: updatedUser.namaLengkap,
+      action: 'LOGIN',
+      entityId: updatedUser.id,
+      ipAddress,
+      userAgent,
     })
 
     // Deteksi login dari IP baru — bandingkan dengan sesi terakhir
@@ -480,13 +505,10 @@ export const authService = {
       data: { revokedAt: new Date() },
     })
 
-    await db.auditLog.create({
-      data: {
-        userId,
-        action: 'LOGOUT',
-        entityType: 'User',
-        entityId: userId,
-      },
+    await writeAuthAudit({
+      userId,
+      action: 'LOGOUT',
+      entityId: userId,
     })
   },
 
@@ -531,13 +553,12 @@ export const authService = {
         data: { revokedAt: new Date() },
       }),
       db.auditLog.create({
-        data: {
+        data: authAuditData({
           userId: user.id,
           userNama: user.namaLengkap,
           action: 'CHANGE_PASSWORD',
-          entityType: 'User',
           entityId: user.id,
-        },
+        }),
       }),
     ])
   },
