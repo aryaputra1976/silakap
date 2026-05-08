@@ -175,6 +175,8 @@ export default function LayananDetailPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .find((log) => log.aksi === "KEMBALIKAN")?.catatan ??
     null;
+  const outputDokumen =
+    usulan.dokumenOutput?.find((doc) => Boolean(doc.namaFile)) ?? null;
 
   return (
     <div className="space-y-[25px]">
@@ -265,23 +267,35 @@ export default function LayananDetailPage() {
 
           {usulan.status === "Selesai" ? (
             <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h5 className="!mb-1">Dokumen Output</h5>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    {usulan.dokumenOutput?.[0]?.namaFile ?? "Dokumen hasil layanan siap diunduh"}
-                  </p>
+              {outputDokumen ? (
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h5 className="!mb-1">Dokumen Output</h5>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {outputDokumen.namaFile}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 py-[10px] px-[16px] bg-primary-500 text-white rounded-md disabled:opacity-70"
+                    disabled={downloadingOutput}
+                    onClick={() => void handleDownloadOutput()}
+                  >
+                    <i className="material-symbols-outlined !text-[18px]">download</i>
+                    {downloadingOutput ? "Mengunduh..." : "Download Hasil"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 py-[10px] px-[16px] bg-primary-500 text-white rounded-md disabled:opacity-70"
-                  disabled={downloadingOutput}
-                  onClick={() => void handleDownloadOutput()}
-                >
-                  <i className="material-symbols-outlined !text-[18px]">download</i>
-                  {downloadingOutput ? "Mengunduh..." : "Download Hasil"}
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-start gap-3 rounded-md border border-gray-100 bg-gray-50 px-4 py-3 dark:border-[#172036] dark:bg-[#15203c]">
+                  <i className="material-symbols-outlined !text-[20px] text-gray-400">folder_off</i>
+                  <div>
+                    <h5 className="!mb-1">Dokumen Output</h5>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Layanan sudah selesai, tetapi dokumen hasil belum tersedia.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -293,6 +307,9 @@ export default function LayananDetailPage() {
 
           <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
             <h5 className="!mb-5">Dokumen persyaratan</h5>
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Upload dokumen sesuai persyaratan. Jika dikembalikan, unggah ulang dokumen yang diminta.
+            </p>
             <div className="space-y-3">
               {usulan.jenisLayanan.persyaratanLayanan.length > 0 ? (
                 usulan.jenisLayanan.persyaratanLayanan.map((p) => {
@@ -326,6 +343,17 @@ export default function LayananDetailPage() {
                             {p.isRequired ? "Wajib" : "Opsional"}
                           </span>
                         )}
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            isUploading
+                              ? "bg-warning-100 text-warning-700 dark:bg-warning-900/20 dark:text-warning-300"
+                              : uploaded
+                                ? "bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300"
+                                : "bg-gray-100 text-gray-600 dark:bg-[#15203c] dark:text-gray-300"
+                          }`}
+                        >
+                          {isUploading ? "Sedang diunggah" : uploaded ? "Terunggah" : "Belum diunggah"}
+                        </span>
                         {uploaded && (
                           <a
                             href={uploaded.pathFile}
@@ -339,7 +367,7 @@ export default function LayananDetailPage() {
                         )}
                       </div>
 
-                      {canUpload && !uploaded && (
+                      {canUpload && (
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           <input
                             type="file"
@@ -358,7 +386,7 @@ export default function LayananDetailPage() {
                             onClick={() => handleUploadRow(rowKey, p.namaPersyaratan)}
                           >
                             <i className="material-symbols-outlined !text-[16px]">upload</i>
-                            {isUploading ? "Mengunggah..." : "Upload"}
+                            {isUploading ? "Mengunggah..." : uploaded ? "Upload Ulang" : "Upload"}
                           </button>
                           {uploadErrors[rowKey] && (
                             <p className="w-full text-xs text-danger-500 mt-0.5">

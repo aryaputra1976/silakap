@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import ConfirmModal from "@/components/silakap/ConfirmModal";
 import { useAsnList } from "@/hooks/useAsn";
 import {
   usePerencanaanActions,
   usePerencanaanList,
 } from "@/hooks/usePerencanaan";
 import { useAuthStore } from "@/store/auth.store";
+import type { PerencanaanPensiun } from "@/types/models";
 
 interface FormState {
   asnId: string;
@@ -34,6 +36,7 @@ export default function PerencanaanPage() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [deleteItem, setDeleteItem] = useState<PerencanaanPensiun | null>(null);
   const canManage =
     user?.roleNama === "Admin_Sistem" || user?.roleNama === "Kabid";
   const canDelete = user?.roleNama === "Admin_Sistem";
@@ -153,7 +156,7 @@ export default function PerencanaanPage() {
                         <div className="flex flex-wrap gap-2">
                           <Link href={`/perencanaan/${item.id}`} className="text-primary-500">Lihat</Link>
                           {canManage && !item.sudahDiproses ? <button type="button" className="text-success-600" onClick={() => actions.tandaiSelesai.mutate(item.id)}>Tandai Selesai</button> : null}
-                          {canDelete ? <button type="button" className="text-danger-500" onClick={() => window.confirm("Hapus data ini?") && actions.remove.mutate(item.id)}>Hapus</button> : null}
+                          {canDelete ? <button type="button" className="text-danger-500" onClick={() => setDeleteItem(item)}>Hapus</button> : null}
                         </div>
                       </td>
                     </tr>
@@ -186,6 +189,22 @@ export default function PerencanaanPage() {
           </form>
         </div>
       ) : null}
+      <ConfirmModal
+        isOpen={Boolean(deleteItem)}
+        title="Hapus Perencanaan Pensiun"
+        description={`Hapus perencanaan pensiun untuk ${deleteItem?.asn?.nama ?? "ASN ini"}? Aksi ini tidak dapat dibatalkan.`}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={() => {
+          if (!deleteItem) return;
+          actions.remove.mutate(deleteItem.id, {
+            onSuccess: () => setDeleteItem(null),
+          });
+        }}
+        showTextarea={false}
+        confirmLabel="Hapus"
+        confirmColor="red"
+        loading={actions.remove.isPending}
+      />
     </div>
   );
 }

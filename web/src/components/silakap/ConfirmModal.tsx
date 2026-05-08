@@ -8,8 +8,10 @@ interface ConfirmModalProps {
   title: string;
   onClose: () => void;
   onConfirm: (value: string) => void;
+  description?: string;
   requireText?: boolean;
   placeholder?: string;
+  showTextarea?: boolean;
   confirmLabel?: string;
   confirmColor?: "green" | "yellow" | "red";
   loading?: boolean;
@@ -26,8 +28,10 @@ export default function ConfirmModal({
   title,
   onClose,
   onConfirm,
+  description,
   requireText = false,
   placeholder = "Catatan",
+  showTextarea = true,
   confirmLabel = "Konfirmasi",
   confirmColor = "green",
   loading = false,
@@ -75,12 +79,19 @@ export default function ConfirmModal({
                 </button>
               </div>
               <div className="trezo-card-content">
-                <textarea
-                  className="min-h-[120px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                  placeholder={placeholder}
-                  value={value}
-                  onChange={(event) => setValue(event.target.value)}
-                />
+                {description ? (
+                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
+                    {description}
+                  </p>
+                ) : null}
+                {showTextarea ? (
+                  <textarea
+                    className="min-h-[120px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={(event) => setValue(event.target.value)}
+                  />
+                ) : null}
                 {error ? (
                   <p className="mt-2 text-sm text-danger-500">{error}</p>
                 ) : null}

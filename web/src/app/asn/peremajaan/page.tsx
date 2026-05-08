@@ -327,7 +327,7 @@ export default function PeremajaanAsnPage() {
   const claim = useClaimPeremajaan();
   const approve = useApprovePeremajaan();
 
-  const tickets = list.data?.data ?? [];
+  const tickets = useMemo(() => list.data?.data ?? [], [list.data?.data]);
   const namaLengkap = user?.namaLengkap ?? "ASN / Operator OPD";
 
   const subtitle = useMemo(() => {

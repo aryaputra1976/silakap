@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import ConfirmModal from "@/components/silakap/ConfirmModal";
 import { useAsnDetail, useAsnRiwayat, useDeleteAsn } from "@/hooks/useAsn";
 import { useAuthStore } from "@/store/auth.store";
 import type { AsnDetail } from "@/types/models";
@@ -39,6 +41,7 @@ export default function AsnDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const asnQuery = useAsnDetail(params.id);
   const riwayatQuery = useAsnRiwayat(params.id);
   const deleteAsn = useDeleteAsn();
@@ -50,11 +53,9 @@ export default function AsnDetailPage() {
   const handleDelete = () => {
     if (!asn) return;
 
-    if (window.confirm("Hapus data ASN ini?")) {
-      deleteAsn.mutate(asn.id, {
-        onSuccess: () => router.push("/asn"),
-      });
-    }
+    deleteAsn.mutate(asn.id, {
+      onSuccess: () => router.push("/asn"),
+    });
   };
 
   if (asnQuery.isLoading) {
@@ -263,7 +264,7 @@ export default function AsnDetailPage() {
                 <button
                   type="button"
                   className="block w-full py-[10px] px-[20px] bg-danger-500 text-white rounded-md hover:bg-danger-400"
-                  onClick={handleDelete}
+                  onClick={() => setDeleteOpen(true)}
                   disabled={deleteAsn.isPending}
                 >
                   Hapus
@@ -273,6 +274,17 @@ export default function AsnDetailPage() {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={deleteOpen}
+        title="Hapus Data ASN"
+        description={`Hapus data ASN ${fullName(asn)}? Aksi ini tidak dapat dibatalkan.`}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        showTextarea={false}
+        confirmLabel="Hapus"
+        confirmColor="red"
+        loading={deleteAsn.isPending}
+      />
     </div>
   );
 }

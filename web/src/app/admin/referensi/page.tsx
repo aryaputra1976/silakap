@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import ConfirmModal from "@/components/silakap/ConfirmModal";
 import UnitOrganisasiTree from "@/components/silakap/UnitOrganisasiTree";
 import {
   useConfigSla,
@@ -410,6 +411,7 @@ function MasterTable({
   const actions = useRefActions();
   const [page, setPage] = useState(1);
   const [editingRow, setEditingRow] = useState<RefRow | null>(null);
+  const [deleteRow, setDeleteRow] = useState<RefRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const rows = (query.data ?? []) as RefRow[];
@@ -459,7 +461,6 @@ function MasterTable({
 
   const remove = async (row: RefRow) => {
     if (!resource) return;
-    if (!window.confirm(`Nonaktifkan "${displayValue(row.nama)}"?`)) return;
     setErrorMessage("");
     try {
       await actions.removeMaster.mutateAsync({
@@ -530,7 +531,7 @@ function MasterTable({
                           <button
                             type="button"
                             disabled={isBusy}
-                            onClick={() => remove(row)}
+                            onClick={() => setDeleteRow(row)}
                             className="rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:hover:bg-red-900/20"
                           >
                             Hapus
@@ -560,6 +561,22 @@ function MasterTable({
           onSubmit={save}
         />
       ) : null}
+      {resource ? (
+        <ConfirmModal
+          isOpen={Boolean(deleteRow)}
+          title={`Nonaktifkan ${title}`}
+          description={`Nonaktifkan "${displayValue(deleteRow?.nama)}"? Data tidak akan dihapus permanen, tetapi tidak aktif untuk pilihan baru.`}
+          onClose={() => setDeleteRow(null)}
+          onConfirm={() => {
+            if (!deleteRow) return;
+            void remove(deleteRow).then(() => setDeleteRow(null));
+          }}
+          showTextarea={false}
+          confirmLabel="Nonaktifkan"
+          confirmColor="red"
+          loading={isBusy}
+        />
+      ) : null}
     </>
   );
 }
@@ -587,6 +604,7 @@ function SlaTable({
   const actions = useConfigSlaActions();
   const [page, setPage] = useState(1);
   const [editingRow, setEditingRow] = useState<RefRow | null>(null);
+  const [deleteRow, setDeleteRow] = useState<RefRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const rows = (query.data ?? []) as RefRow[];
@@ -619,7 +637,6 @@ function SlaTable({
   };
 
   const remove = async (row: RefRow) => {
-    if (!window.confirm("Hapus konfigurasi SLA ini?")) return;
     setErrorMessage("");
     try {
       await actions.remove.mutateAsync(row.id);
@@ -684,7 +701,7 @@ function SlaTable({
                         <button
                           type="button"
                           disabled={isBusy}
-                          onClick={() => remove(row)}
+                          onClick={() => setDeleteRow(row)}
                           className="rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:hover:bg-red-900/20"
                         >
                           Hapus
@@ -707,6 +724,20 @@ function SlaTable({
         isSubmitting={isBusy}
         onClose={() => setIsModalOpen(false)}
         onSubmit={save}
+      />
+      <ConfirmModal
+        isOpen={Boolean(deleteRow)}
+        title="Hapus Konfigurasi SLA"
+        description={`Hapus konfigurasi SLA untuk ${displayValue(deleteRow?.jabatan)}? Pengaturan SLA ini tidak akan dipakai lagi setelah dihapus.`}
+        onClose={() => setDeleteRow(null)}
+        onConfirm={() => {
+          if (!deleteRow) return;
+          void remove(deleteRow).then(() => setDeleteRow(null));
+        }}
+        showTextarea={false}
+        confirmLabel="Hapus"
+        confirmColor="red"
+        loading={isBusy}
       />
     </>
   );

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import ConfirmModal from "@/components/silakap/ConfirmModal";
 import {
   useRefUnitAdmin,
   useRoleList,
@@ -52,6 +53,11 @@ const toPayload = (form: UserForm, mode: "create" | "edit") => {
   return payload;
 };
 
+type PendingConfirm =
+  | { type: "reset"; id: string; name: string }
+  | { type: "delete"; id: string; name: string }
+  | null;
+
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleId, setRoleId] = useState("");
@@ -61,6 +67,7 @@ export default function AdminUsersPage() {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [form, setForm] = useState<UserForm>(emptyForm);
   const [newPassword, setNewPassword] = useState("");
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm>(null);
   const roles = useRoleList();
   const units = useRefUnitAdmin();
   const actions = useUserActions();
@@ -110,10 +117,19 @@ export default function AdminUsersPage() {
     }
   };
 
-  const resetPassword = (id: string) => {
-    if (!window.confirm("Reset password user ini?")) return;
-    actions.resetPassword.mutate(id, {
-      onSuccess: (response) => setNewPassword(response.data.data.newPassword),
+  const confirmAction = () => {
+    if (!pendingConfirm) return;
+    if (pendingConfirm.type === "reset") {
+      actions.resetPassword.mutate(pendingConfirm.id, {
+        onSuccess: (response) => {
+          setNewPassword(response.data.data.newPassword);
+          setPendingConfirm(null);
+        },
+      });
+      return;
+    }
+    actions.remove.mutate(pendingConfirm.id, {
+      onSuccess: () => setPendingConfirm(null),
     });
   };
 
@@ -146,7 +162,7 @@ export default function AdminUsersPage() {
         {users.isLoading ? <div className="animate-pulse rounded-md bg-gray-200 dark:bg-[#172036] h-48" /> : (
           <>
             <div className="table-responsive overflow-x-auto">
-              <table className="w-full"><thead><tr>{["Username", "Nama", "Role", "Unit", "Status", "Last Login", "Aksi"].map((heading) => <th className="font-medium text-left px-[20px] py-[11px] bg-primary-50 dark:bg-[#15203c]" key={heading}>{heading}</th>)}</tr></thead><tbody>{(users.data?.data ?? []).map((user) => <tr key={user.id}><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] font-medium">{user.username}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{user.namaLengkap}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{displayRoleLabel(user.roleNama)}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{user.unitOrganisasi?.nama ?? "-"}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${user.isActive ? "bg-success-100 text-success-700" : "bg-danger-100 text-danger-700"}`}>{user.isActive ? "Aktif" : "Nonaktif"}</span></td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{user.lastLogin ? new Date(user.lastLogin).toLocaleString("id-ID") : "-"}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"><div className="flex flex-wrap gap-2"><Link className="text-primary-500" href={`/admin/users/${user.id}`}>Lihat</Link><button className="text-warning-700" type="button" onClick={() => openEdit(user)}>Edit</button><button className="text-purple-500" type="button" onClick={() => resetPassword(user.id)}>Reset</button>{!user.isActive ? <button className="text-success-600" type="button" onClick={() => actions.unlock.mutate(user.id)}>Aktifkan</button> : null}<button className="text-danger-500" type="button" onClick={() => window.confirm("Hapus user ini?") && actions.remove.mutate(user.id)}>Hapus</button></div></td></tr>)}</tbody></table>
+              <table className="w-full"><thead><tr>{["Username", "Nama", "Role", "Unit", "Status", "Last Login", "Aksi"].map((heading) => <th className="font-medium text-left px-[20px] py-[11px] bg-primary-50 dark:bg-[#15203c]" key={heading}>{heading}</th>)}</tr></thead><tbody>{(users.data?.data ?? []).map((user) => <tr key={user.id}><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] font-medium">{user.username}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{user.namaLengkap}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{displayRoleLabel(user.roleNama)}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{user.unitOrganisasi?.nama ?? "-"}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${user.isActive ? "bg-success-100 text-success-700" : "bg-danger-100 text-danger-700"}`}>{user.isActive ? "Aktif" : "Nonaktif"}</span></td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{user.lastLogin ? new Date(user.lastLogin).toLocaleString("id-ID") : "-"}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"><div className="flex flex-wrap gap-2"><Link className="text-primary-500" href={`/admin/users/${user.id}`}>Lihat</Link><button className="text-warning-700" type="button" onClick={() => openEdit(user)}>Edit</button><button className="text-purple-500" type="button" onClick={() => setPendingConfirm({ type: "reset", id: user.id, name: user.namaLengkap })}>Reset</button>{!user.isActive ? <button className="text-success-600" type="button" onClick={() => actions.unlock.mutate(user.id)}>Aktifkan</button> : null}<button className="text-danger-500" type="button" onClick={() => setPendingConfirm({ type: "delete", id: user.id, name: user.namaLengkap })}>Hapus</button></div></td></tr>)}</tbody></table>
             </div>
             {!users.data?.data.length ? <div className="text-center py-[35px]">Belum ada pengguna</div> : null}
             {users.data?.meta.totalPages ? <div className="flex justify-end gap-2 mt-[20px]">{Array.from({ length: users.data.meta.totalPages }).map((_, index) => <button key={index} type="button" className={`w-9 h-9 rounded-md border ${page === index + 1 ? "bg-primary-500 text-white border-primary-500" : "border-gray-200 dark:border-[#172036]"}`} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div> : null}
@@ -159,6 +175,21 @@ export default function AdminUsersPage() {
         </div>
       ) : null}
       {newPassword ? <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] max-w-[420px] w-full"><h5>Password Baru</h5><p className="select-all font-mono bg-gray-50 dark:bg-[#15203c] p-3 rounded-md">{newPassword}</p><button type="button" className="mt-4 px-5 py-2 bg-primary-500 text-white rounded-md" onClick={() => setNewPassword("")}>Tutup</button></div></div> : null}
+      <ConfirmModal
+        isOpen={Boolean(pendingConfirm)}
+        title={pendingConfirm?.type === "reset" ? "Reset Password" : "Hapus Pengguna"}
+        description={
+          pendingConfirm?.type === "reset"
+            ? `Reset password untuk ${pendingConfirm.name}? Password baru akan dibuat otomatis dan perlu disampaikan secara aman.`
+            : `Hapus pengguna ${pendingConfirm?.name ?? "ini"}? Aksi ini tidak dapat dibatalkan.`
+        }
+        onClose={() => setPendingConfirm(null)}
+        onConfirm={confirmAction}
+        showTextarea={false}
+        confirmLabel={pendingConfirm?.type === "reset" ? "Reset Password" : "Hapus"}
+        confirmColor={pendingConfirm?.type === "reset" ? "yellow" : "red"}
+        loading={actions.resetPassword.isPending || actions.remove.isPending}
+      />
     </div>
   );
 }

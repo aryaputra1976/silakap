@@ -120,6 +120,22 @@ export default function MyProfilePage() {
                 {mustChangePassword ? "Perlu diganti" : "Aktif"}
               </span>
             </div>
+            <Link
+              href="/settings/change-password"
+              className="flex items-center gap-3 rounded-md border border-gray-100 p-3 text-left transition-colors hover:border-primary-500 hover:bg-primary-50 dark:border-[#172036] dark:hover:bg-[#15203c]"
+            >
+              <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600 dark:bg-[#15203c]">
+                <i className="material-symbols-outlined !text-[22px]">lock_reset</i>
+              </span>
+              <span>
+                <span className="block font-semibold text-black dark:text-white">
+                  Ganti Password
+                </span>
+                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                  Perbarui password akun secara aman.
+                </span>
+              </span>
+            </Link>
           </div>
         </div>
 
