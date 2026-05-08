@@ -1,13 +1,13 @@
 import type { RoleName } from "@/types/models";
 
 export const DASHBOARD_BY_ROLE: Record<RoleName, string> = {
-  Pengelola_OPD: "/dashboard/opd",
-  Analis_Pertama: "/dashboard/analis-pertama",
-  Analis_Muda: "/dashboard/analis-muda",
-  Analis_Madya: "/dashboard/analis-madya",
-  Kabid: "/dashboard/kabid",
-  Kepala_Badan: "/dashboard/kepala-badan",
-  Admin_Sistem: "/dashboard/admin",
+  Pengelola_OPD: "/dashboard",
+  Analis_Pertama: "/dashboard",
+  Analis_Muda: "/dashboard",
+  Analis_Madya: "/dashboard",
+  Kabid: "/dashboard",
+  Kepala_Badan: "/dashboard",
+  Admin_Sistem: "/dashboard",
 };
 
 const ROLE_ALIASES: Record<string, RoleName> = {

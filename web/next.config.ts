@@ -77,6 +77,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      '/dashboard/admin',
+      '/dashboard/analis-pertama',
+      '/dashboard/analis-muda',
+      '/dashboard/analis-madya',
+      '/dashboard/kabid',
+      '/dashboard/kepala-badan',
+      '/dashboard/opd',
+      '/dashboard/analytics-kabid',
+    ].map((source) => ({
+      source,
+      destination: '/dashboard',
+      permanent: false,
+    }));
+  },
 };
 
 const sentryOptions = {

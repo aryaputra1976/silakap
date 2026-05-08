@@ -10,17 +10,17 @@ export interface MenuItem {
 
 export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   Pengelola_OPD: [
-    { label: "Dashboard", href: "/dashboard/opd", icon: "dashboard" },
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
     {
       label: "Layanan Kepegawaian",
       href: "#",
       icon: "folder_open",
       children: [
         { label: "Buat Usulan", href: "/layanan/buat" },
-        { label: "Draft Saya", href: "/layanan/draft" },
-        { label: "Pengajuan Aktif", href: "/layanan/aktif" },
-        { label: "Dikembalikan", href: "/layanan/dikembalikan" },
-        { label: "Riwayat Selesai", href: "/layanan/selesai" },
+        { label: "Draft Saya", href: "/layanan?status=draft" },
+        { label: "Pengajuan Aktif", href: "/layanan?status=dalamproses" },
+        { label: "Dikembalikan", href: "/layanan?status=dikembalikan" },
+        { label: "Riwayat Selesai", href: "/layanan?status=selesai" },
         { label: "Semua Usulan", href: "/layanan" },
       ],
     },
@@ -30,7 +30,7 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   ],
 
   Analis_Pertama: [
-    { label: "Dashboard", href: "/dashboard/analis-pertama", icon: "dashboard" },
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
     {
       label: "Antrian Verifikasi",
       href: "#",
@@ -49,7 +49,7 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   ],
 
   Analis_Muda: [
-    { label: "Dashboard", href: "/dashboard/analis-muda", icon: "dashboard" },
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
     {
       label: "Antrian Verifikasi",
       href: "#",
@@ -69,7 +69,7 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   ],
 
   Analis_Madya: [
-    { label: "Dashboard", href: "/dashboard/analis-madya", icon: "dashboard" },
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
     {
       label: "Quality Control",
       href: "#",
@@ -88,7 +88,7 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   ],
 
   Kabid: [
-    { label: "Dashboard", href: "/dashboard/kabid", icon: "dashboard" },
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
     {
       label: "Approval",
       href: "#",
@@ -116,7 +116,6 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
       children: [
         { label: "Beban Kerja", href: "/dashboard/beban-kerja" },
         { label: "SLA Tahapan", href: "/dashboard/sla-tahapan" },
-        { label: "Analytics Kabid", href: "/dashboard/analytics-kabid" },
         { label: "Reject Counter", href: "/reject-counter" },
       ],
     },
@@ -128,7 +127,7 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   ],
 
   Kepala_Badan: [
-    { label: "Dashboard", href: "/dashboard/kepala-badan", icon: "dashboard" },
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
     {
       label: "TTE & Approval",
       href: "#",
@@ -154,7 +153,7 @@ export const SILAKAP_MENUS: Record<RoleName, MenuItem[]> = {
   ],
 
   Admin_Sistem: [
-    { label: "Dashboard", href: "/dashboard/admin", icon: "admin_panel_settings" },
+    { label: "Dashboard", href: "/dashboard", icon: "admin_panel_settings" },
     {
       label: "Data ASN",
       href: "#",

@@ -1,13 +1,5 @@
-import LayananFilteredList from "@/components/silakap/LayananFilteredList";
+import { redirect } from "next/navigation";
 
 export default function SelesaiPage() {
-  return (
-    <LayananFilteredList
-      title="Download Hasil"
-      description="Dokumen output layanan yang sudah selesai dan siap diunduh OPD"
-      status="Selesai"
-      emptyText="Belum ada dokumen hasil yang siap diunduh."
-      showDownload
-    />
-  );
+  redirect("/layanan?status=selesai");
 }

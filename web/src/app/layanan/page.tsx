@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import StatusBadge from "@/components/silakap/StatusBadge";
 import { useLayananList } from "@/hooks/useLayanan";
 import { displayStatusLabel, displayTahapLabel } from "@/lib/display-labels";
@@ -25,20 +26,94 @@ const STATUS_OPTIONS = [
 
 const TAHAP_OPTIONS = ["", "AP", "AM", "AD", "Kabid", "KepalaBadan"];
 
-export default function LayananPage() {
-  const user = useAuthStore((state) => state.user);
-  const [status, setStatus] = useState("");
-  const [tahap, setTahap] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+const STATUS_TO_TAHAP: Record<string, string | null> = {
+  Draft: null,
+  Diajukan: "AP",
+  VerifikasiAP: "AP",
+  VerifikasiAM: "AM",
+  QualityControl: "AD",
+  ApprovalKabid: "Kabid",
+  ApprovalKepalaBadan: "KepalaBadan",
+  Selesai: null,
+  Ditolak: null,
+  Dikembalikan: null,
+  Diarsipkan: null,
+};
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setStatus(params.get("status") ?? "");
-    setTahap(params.get("tahap") ?? "");
-    setSearch(params.get("search") ?? "");
-    setPage(Number(params.get("page") ?? 1));
+const toQueryValue = (value: string) => value.toLowerCase();
+
+const normalizeOption = (value: string | null, options: string[]) => {
+  if (!value) return "";
+  return (
+    options.find((option) => option.toLowerCase() === value.toLowerCase()) ??
+    ""
+  );
+};
+
+const normalizePage = (value: string | null) => {
+  const page = Number(value ?? 1);
+  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+};
+
+const getVisiblePages = (current: number, total: number) => {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+
+  const pages = new Set([1, 2, total, current - 1, current, current + 1]);
+  const sorted = Array.from(pages)
+    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= total)
+    .sort((a, b) => a - b);
+
+  return sorted.reduce<(number | "ellipsis")[]>((items, pageNumber, index) => {
+    if (index > 0 && pageNumber - sorted[index - 1] > 1) {
+      items.push("ellipsis");
+    }
+    items.push(pageNumber);
+    return items;
   }, []);
+};
+
+export default function LayananPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const user = useAuthStore((state) => state.user);
+  const status = normalizeOption(searchParams.get("status"), STATUS_OPTIONS);
+  const tahap = normalizeOption(searchParams.get("tahap"), TAHAP_OPTIONS);
+  const search = searchParams.get("q") ?? searchParams.get("search") ?? "";
+  const page = normalizePage(searchParams.get("page"));
+
+  const updateQuery = useCallback(
+    (
+      changes: Record<string, string | number | null>,
+      mode: "push" | "replace" = "push",
+    ) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      Object.entries(changes).forEach(([key, value]) => {
+        if (value === null || value === "") {
+          params.delete(key);
+        } else {
+          params.set(key, String(value));
+        }
+      });
+
+      if (!("page" in changes)) {
+        params.delete("page");
+      }
+      params.delete("search");
+
+      const queryString = params.toString();
+      const href = queryString ? `${pathname}?${queryString}` : pathname;
+      if (mode === "replace") {
+        router.replace(href, { scroll: false });
+        return;
+      }
+      router.push(href, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   const queryParams = useMemo(
     () => ({
@@ -52,14 +127,19 @@ export default function LayananPage() {
   );
 
   const layanan = useLayananList(queryParams);
+  const totalPages = layanan.data?.meta.totalPages ?? 1;
+  const currentPage = Math.min(page, totalPages);
+  const hasFilter = Boolean(status || tahap || search.trim());
+  const expectedTahap = status ? STATUS_TO_TAHAP[status] : undefined;
+  const contradictoryFilter =
+    Boolean(status && tahap) &&
+    (expectedTahap === null || (expectedTahap !== undefined && expectedTahap !== tahap));
+  const visiblePages = getVisiblePages(currentPage, totalPages);
 
-  const handleFilterChange = (
-    updater: (value: string) => void,
-    value: string,
-  ) => {
-    updater(value);
-    setPage(1);
-  };
+  useEffect(() => {
+    if (!layanan.data || page <= totalPages) return;
+    updateQuery({ page: totalPages }, "replace");
+  }, [layanan.data, page, totalPages, updateQuery]);
 
   return (
     <div className="space-y-[25px]">
@@ -86,9 +166,10 @@ export default function LayananPage() {
           <select
             className="h-[45px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px] outline-0"
             value={status}
-            onChange={(event) =>
-              handleFilterChange(setStatus, event.target.value)
-            }
+            onChange={(event) => {
+              const value = event.target.value;
+              updateQuery({ status: value ? toQueryValue(value) : null });
+            }}
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -99,9 +180,10 @@ export default function LayananPage() {
           <select
             className="h-[45px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px] outline-0"
             value={tahap}
-            onChange={(event) =>
-              handleFilterChange(setTahap, event.target.value)
-            }
+            onChange={(event) => {
+              const value = event.target.value;
+              updateQuery({ tahap: value ? toQueryValue(value) : null });
+            }}
           >
             {TAHAP_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -111,13 +193,18 @@ export default function LayananPage() {
           </select>
           <input
             className="h-[45px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] outline-0"
-            placeholder="Cari nomor usulan"
+            placeholder="Cari nomor usulan atau kata kunci"
             value={search}
             onChange={(event) =>
-              handleFilterChange(setSearch, event.target.value)
+              updateQuery({ q: event.target.value }, "replace")
             }
           />
         </div>
+        {contradictoryFilter ? (
+          <div className="mt-4 rounded-md border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-800/40 dark:bg-warning-900/20 dark:text-warning-200">
+            Kombinasi status dan tahap terlihat tidak selaras. Coba kosongkan salah satu filter jika hasil tidak muncul.
+          </div>
+        ) : null}
       </div>
 
       {layanan.isError ? (
@@ -193,27 +280,37 @@ export default function LayananPage() {
               </table>
             </div>
 
-            <div className="flex items-center justify-end gap-2 mt-[20px]">
-              {Array.from({ length: layanan.data.meta.totalPages }).map(
-                (_, index) => {
-                  const pageNumber = index + 1;
+            {totalPages > 1 ? (
+              <div className="flex flex-wrap items-center justify-end gap-2 mt-[20px]">
+                {visiblePages.map((pageItem, index) => {
+                  if (pageItem === "ellipsis") {
+                    return (
+                      <span
+                        className="inline-flex h-9 min-w-9 items-center justify-center px-2 text-gray-400"
+                        key={`ellipsis-${index}`}
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
                   return (
                     <button
                       className={`w-9 h-9 rounded-md border ${
-                        pageNumber === page
+                        pageItem === currentPage
                           ? "bg-primary-500 text-white border-primary-500"
                           : "border-gray-200 dark:border-[#172036]"
                       }`}
-                      key={pageNumber}
+                      key={pageItem}
                       type="button"
-                      onClick={() => setPage(pageNumber)}
+                      onClick={() => updateQuery({ page: pageItem })}
                     >
-                      {pageNumber}
+                      {pageItem}
                     </button>
                   );
-                },
-              )}
-            </div>
+                })}
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="text-center py-[45px]">
@@ -222,9 +319,13 @@ export default function LayananPage() {
                 folder_open
               </i>
             </div>
-            <h5 className="!mb-1">Belum ada usulan</h5>
+            <h5 className="!mb-1">
+              {hasFilter ? "Tidak ada usulan sesuai filter" : "Belum ada usulan"}
+            </h5>
             <p className="text-gray-500 dark:text-gray-400">
-              Usulan layanan akan tampil di sini.
+              {hasFilter
+                ? "Tidak ada usulan sesuai filter. Coba ubah status/tahap/pencarian."
+                : "Usulan layanan akan tampil di sini."}
             </p>
           </div>
         )}

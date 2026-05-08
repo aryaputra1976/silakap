@@ -1,12 +1,5 @@
-import LayananFilteredList from "@/components/silakap/LayananFilteredList";
+import { redirect } from "next/navigation";
 
 export default function DikembalikanPage() {
-  return (
-    <LayananFilteredList
-      title="Usulan Dikembalikan"
-      description="Usulan yang perlu diperbaiki dan diajukan ulang"
-      status="Dikembalikan"
-      emptyText="Tidak ada usulan yang sedang dikembalikan."
-    />
-  );
+  redirect("/layanan?status=dikembalikan");
 }

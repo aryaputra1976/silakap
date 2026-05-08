@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SILAKAP_MENUS } from "./silakap-menu";
 import { normalizeRoleName } from "@/lib/dashboard-redirect";
 import { useAuthStore } from "@/store/auth.store";
@@ -26,14 +26,30 @@ const isActivePath = (pathname: string, href: string) => {
 };
 
 // Used for child (leaf) items: exact match only — prevents sibling/parent highlight
-const isActiveExact = (pathname: string, href: string) => {
+const isActiveExact = (
+  pathname: string,
+  href: string,
+  currentSearch: URLSearchParams,
+) => {
   const itemPath = normalizePath(href);
   if (itemPath === "#") return false;
-  return normalizePath(pathname) === itemPath;
+  if (normalizePath(pathname) !== itemPath) return false;
+
+  const [, queryString] = href.split("?");
+  if (!queryString) {
+    return Array.from(currentSearch.keys()).length === 0;
+  }
+
+  const itemSearch = new URLSearchParams(queryString);
+  return Array.from(itemSearch.entries()).every(
+    ([key, value]) =>
+      currentSearch.get(key)?.toLowerCase() === value.toLowerCase(),
+  );
 };
 
-const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
+const SidebarMenuContent: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const roleName = user ? normalizeRoleName(user.roleNama) : null;
   const menuItems = roleName ? SILAKAP_MENUS[roleName] ?? [] : [];
@@ -60,7 +76,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
       <div className="sidebar-area bg-white dark:bg-[#0c1427] fixed z-[7] top-0 h-screen transition-all rounded-r-md">
         <div className="logo bg-white dark:bg-[#0c1427] border-b border-gray-100 dark:border-[#172036] px-[25px] pt-[19px] pb-[15px] absolute z-[2] right-0 top-0 left-0">
           <Link
-            href="/dashboard/opd"
+            href="/dashboard"
             className="transition-none relative flex items-center outline-none"
           >
             <Image
@@ -161,7 +177,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                             <Link
                               href={child.href}
                               className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                                isActiveExact(pathname, child.href)
+                                isActiveExact(pathname, child.href, searchParams)
                                   ? "active"
                                   : ""
                               }`}
@@ -182,5 +198,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
     </>
   );
 };
+
+const SidebarMenu: React.FC<SidebarMenuProps> = (props) => (
+  <React.Suspense fallback={null}>
+    <SidebarMenuContent {...props} />
+  </React.Suspense>
+);
 
 export default SidebarMenu;
