@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import StatusBadge from "@/components/silakap/StatusBadge";
@@ -47,7 +47,7 @@ export default function LayananFilteredList({
         </Link>
       </div>
 
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         {layanan.isLoading ? (
           <div className="animate-pulse rounded-xl bg-gray-200 dark:bg-[#172036] h-40" />
         ) : layanan.isError ? (

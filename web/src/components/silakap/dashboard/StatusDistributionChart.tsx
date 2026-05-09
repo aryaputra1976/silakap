@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import dynamic from "next/dynamic";
 import type { ApexOptions } from "apexcharts";
@@ -78,8 +78,8 @@ export default function StatusDistributionChart({
   };
 
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md h-full">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px]">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] h-full">
+      <div className="mb-4">
         <h5 className="!mb-0">Distribusi Status Usulan</h5>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Komposisi seluruh usulan berdasarkan status

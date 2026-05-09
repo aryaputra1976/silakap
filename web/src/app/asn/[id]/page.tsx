@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -105,7 +105,7 @@ export default function AsnDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[25px]">
         <div className="lg:col-span-2 space-y-[25px]">
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5>Data Pribadi</h5>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Nama Lengkap" value={fullName(asn)} />
@@ -135,7 +135,7 @@ export default function AsnDetailPage() {
             </div>
           </div>
 
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5>Data Kepegawaian</h5>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field
@@ -188,7 +188,7 @@ export default function AsnDetailPage() {
             </div>
           </div>
 
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5>Riwayat</h5>
             {riwayatQuery.isLoading ? (
               <div className="animate-pulse rounded-md bg-gray-200 dark:bg-[#172036] h-24" />
@@ -233,7 +233,7 @@ export default function AsnDetailPage() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md sticky top-[110px]">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] sticky top-[110px]">
             <div className="text-center">
               <div className="w-24 h-24 mx-auto rounded-full bg-primary-600 text-white flex items-center justify-center text-3xl font-bold mb-4">
                 {asn.nama.slice(0, 2).toUpperCase()}

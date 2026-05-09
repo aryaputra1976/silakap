@@ -79,6 +79,33 @@ enum StatusImport {
   Failed
 }
 
+enum JenisPensiun {
+  BUP
+  APS
+  JandaDuda
+  Uzur
+  Dini
+}
+
+enum SubJenisUzur {
+  KarenaDinas
+  BukanKarenaDinas
+}
+
+enum StatusPensiun {
+  Terdeteksi
+  DraftBerkas
+  ValidasiSyarat
+  PersetujuanPejabat
+  VerifikasiBKPSDM
+  InputSIASN
+  CetakDokumen
+  DikirimKanreg
+  SKTerbit
+  Ditolak
+  Dibatalkan
+}
+
 enum JenisLaporan {
   Harian
   Bulanan
@@ -529,7 +556,7 @@ model Asn {
   asnRiwayat         AsnRiwayat[]
   asnPeremajaan      AsnPeremajaan[]
   usulanLayanan      UsulanLayanan[]
-  perencanaanPensiun PerencanaanPensiun?
+  perencanaanPensiun PerencanaanPensiun[]
 
   @@index([nipBaru])
   @@index([nama])
@@ -1154,21 +1181,40 @@ model TemplateDokumen {
 // =====================================================
 
 model PerencanaanPensiun {
-  id            BigInt   @id @default(autoincrement())
-  asnId         BigInt   @unique @map("asn_id")
-  tanggalBup    DateTime @map("tanggal_bup")
-  tahunBup      Int      @map("tahun_bup")
-  bupUsia       Int      @map("bup_usia")
-  keterangan    String?  @db.Text
-  sudahDiproses Boolean  @default(false) @map("sudah_diproses")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             BigInt        @id @default(autoincrement())
+  asnId          BigInt        @map("asn_id")
+  jenisPensiun   JenisPensiun  @default(BUP) @map("jenis_pensiun")
+  statusPensiun  StatusPensiun @default(DraftBerkas) @map("status_pensiun")
+  isDarurat      Boolean       @default(false) @map("is_darurat")
+  subJenisUzur   SubJenisUzur? @map("sub_jenis_uzur")
+  autoDetected   Boolean       @default(false) @map("auto_detected")
+
+  tanggalBup     DateTime      @map("tanggal_bup")
+  tahunBup       Int           @map("tahun_bup")
+  bupUsia        Int           @map("bup_usia")
+  tanggalTmt     DateTime?     @map("tanggal_tmt")
+
+  dokumenChecklist Json?       @map("dokumen_checklist")
+  keterangan       String?     @db.Text
+  catatanPenolakan String?     @map("catatan_penolakan") @db.Text
+
+  tanggalPengajuanKeBkn DateTime? @map("tanggal_pengajuan_ke_bkn")
+  nomorSkPensiun   String?     @map("nomor_sk_pensiun") @db.VarChar(100)
+  tanggalSkTerbit  DateTime?   @map("tanggal_sk_terbit")
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   asn Asn @relation(fields: [asnId], references: [id], onDelete: Cascade)
 
+  @@index([asnId])
+  @@index([jenisPensiun])
+  @@index([statusPensiun])
   @@index([tanggalBup])
   @@index([tahunBup])
-  @@index([sudahDiproses])
+  @@index([isDarurat])
+  @@index([autoDetected])
+  @@index([jenisPensiun, statusPensiun])
   @@map("perencanaan_pensiun")
 }
 

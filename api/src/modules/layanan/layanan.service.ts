@@ -75,6 +75,7 @@ export const layananService = {
 
   async create(dto: CreateUsulanDto, actor: Actor) {
     layananAccessPolicy.canCreate(actor.roleName)
+    if (!actor.unitOrganisasiId) throw new AppError('Unit organisasi tidak ditemukan', 403)
 
     const nomorUsulan = await layananNumberingService.generate()
 
@@ -83,7 +84,7 @@ export const layananService = {
       nomorUsulan,
       jenisLayanan: { connect: { id: dto.jenisLayananId } },
       asn: { connect: { id: dto.asnId } },
-      unitOrganisasi: { connect: { id: dto.unitOrganisasiId } },
+      unitOrganisasi: { connect: { id: BigInt(actor.unitOrganisasiId) } },
       diajukanOleh: { connect: { id: actor.id } },
       tanggalUsulan: dto.tanggalUsulan,
       status: StatusUsulan.Draft,

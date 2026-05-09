@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
@@ -93,8 +93,8 @@ export default function ChangePasswordPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[25px]">
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md lg:col-span-2">
-          <div className="trezo-card-header mb-[20px] md:mb-[25px]">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] lg:col-span-2">
+          <div className="mb-4">
             <h5 className="!mb-0">Form Ganti Password</h5>
           </div>
 
@@ -153,7 +153,7 @@ export default function ChangePasswordPage() {
           </form>
         </div>
 
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <h5 className="!mb-4">Ketentuan Password</h5>
           <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <li className="flex gap-2">

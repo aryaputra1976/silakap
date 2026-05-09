@@ -5,6 +5,7 @@ import { db } from '@/core/database/prisma.client'
 import { AppError } from '@/core/errors/app-error'
 import { env } from '@/core/config/env'
 import { buildMeta, getPaginationParams } from '@/core/http/pagination.helper'
+import { logger } from '@/core/logger/logger'
 import { hashPassword } from '@/core/security/password.helper'
 import type { CreateUserDto } from './dto/create-user.dto'
 import type { ResetPasswordResponseDto, UserResponseDto } from './dto/user-response.dto'
@@ -311,10 +312,16 @@ export const usersService = {
     if (current.email) {
       try {
         const { emailService, emailTemplates } = await import('@/modules/email')
-        const template = emailTemplates.berkas({
-          recipientName: current.namaLengkap,
-          title: 'Reset Password SILAKAP',
-          body: `Password sementara Anda: ${temporaryPassword}\n\nSegera ganti password setelah login pertama.`,
+        if (!emailService.isConfigured()) {
+          if (emailService.isEnabled()) {
+            logger.warn('SMTP belum dikonfigurasi; password sementara reset dikembalikan ke admin', { userId: id })
+          }
+          await audit(actor, 'RESET_PASSWORD_EMAIL_NOT_CONFIGURED', id)
+          return { temporaryPassword, emailSent: false }
+        }
+        const template = emailTemplates.passwordReset({
+          namaLengkap: current.namaLengkap,
+          temporaryPassword,
         })
         await emailService.send(template, current.email)
       } catch {

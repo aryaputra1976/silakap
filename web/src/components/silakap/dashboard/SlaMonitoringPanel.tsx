@@ -1,4 +1,4 @@
-interface SlaSummary {
+﻿interface SlaSummary {
   total: number;
   overdue: number;
   selesai: number;
@@ -18,8 +18,8 @@ export default function SlaMonitoringPanel({ sla }: SlaMonitoringPanelProps) {
   const ontimePercent = Math.max(0, 100 - overduePercent - selesaiPercent);
 
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md h-full flex flex-col">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px]">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] h-full flex flex-col">
+      <div className="mb-4">
         <h5 className="!mb-0">SLA Monitoring</h5>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Status kepatuhan waktu layanan

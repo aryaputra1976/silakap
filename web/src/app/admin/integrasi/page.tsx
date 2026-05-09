@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -75,7 +75,7 @@ export default function AdminIntegrasiPage() {
         )}
       </div>
 
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-[20px]">
           <h5 className="!mb-0">Validasi Data</h5>
           <button
@@ -115,7 +115,7 @@ export default function AdminIntegrasiPage() {
         )}
       </div>
 
-      <div id="log" className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div id="log" className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <h5>Log Import</h5>
         {log.isLoading ? (
           <div className="animate-pulse h-48 bg-gray-200 dark:bg-[#172036] rounded-md" />

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import {
@@ -438,7 +438,7 @@ export default function PeremajaanAsnPage() {
         </div>
       </div>
 
-      <div className="trezo-card rounded-md border border-gray-200 bg-white p-[20px] dark:border-[#172036] dark:bg-[#0c1427] md:p-[25px]">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <div className="flex items-center gap-4">
             <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-primary-100 text-lg font-semibold text-primary-600 dark:bg-[#15203c]">
@@ -473,7 +473,7 @@ export default function PeremajaanAsnPage() {
       {activeTab === "ajukan" ? (
         <>
           <div className="grid grid-cols-1 gap-[25px] xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-            <section className="trezo-card rounded-md border border-gray-200 bg-white p-[20px] dark:border-[#172036] dark:bg-[#0c1427] md:p-[25px]">
+            <section className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
               <div className="mb-[20px] flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h5 className="!mb-1">Katalog layanan peremajaan</h5>
@@ -589,7 +589,7 @@ export default function PeremajaanAsnPage() {
               ) : null}
             </section>
 
-            <aside className="trezo-card rounded-md border border-gray-200 bg-white p-[20px] dark:border-[#172036] dark:bg-[#0c1427] md:p-[25px]">
+            <aside className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
               <div className="mb-5">
                 <h5 className="!mb-1">Flow pengajuan</h5>
                 <p className="text-gray-500 dark:text-gray-400">
@@ -898,7 +898,7 @@ export default function PeremajaanAsnPage() {
       ) : null}
 
       {activeTab === "tiket" ? (
-        <section className="trezo-card rounded-md border border-gray-200 bg-white p-[20px] dark:border-[#172036] dark:bg-[#0c1427] md:p-[25px]">
+        <section className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <div className="mb-[20px] flex flex-wrap items-center justify-between gap-3">
             <div>
               <h5 className="!mb-1">Tracking tiket peremajaan</h5>
@@ -1170,7 +1170,7 @@ export default function PeremajaanAsnPage() {
       ) : null}
 
       {activeTab === "profil" ? (
-        <section className="trezo-card rounded-md border border-gray-200 bg-white p-[20px] dark:border-[#172036] dark:bg-[#0c1427] md:p-[25px]">
+        <section className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <div className="mb-[20px]">
             <h5 className="!mb-1">Profil akses portal</h5>
             <p className="text-gray-500 dark:text-gray-400">

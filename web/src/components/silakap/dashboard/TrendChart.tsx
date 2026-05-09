@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import dynamic from "next/dynamic";
 import type { ApexOptions } from "apexcharts";
@@ -67,8 +67,8 @@ export default function TrendChart({ data, days = 7 }: TrendChartProps) {
   };
 
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md h-full">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-start justify-between">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] h-full">
+      <div className="mb-4 flex items-start justify-between">
         <div>
           <h5 className="!mb-0">Tren Usulan Masuk</h5>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

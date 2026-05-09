@@ -1,4 +1,4 @@
-export interface AktivitasItem {
+﻿export interface AktivitasItem {
   id: string;
   aksi: string;
   catatan: string | null;
@@ -38,13 +38,11 @@ export function AktivitasTable({ data, limit = 10 }: AktivitasTableProps) {
   const rows = data.slice(0, limit);
 
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
-        <div className="trezo-card-title">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+      <div className="mb-4 flex items-center justify-between">
           <h5 className="!mb-0">Aktivitas Terkini</h5>
-        </div>
       </div>
-      <div className="trezo-card-content">
+      <div>
         <div className="table-responsive overflow-x-auto">
           <table className="w-full">
             <thead className="text-black dark:text-white">

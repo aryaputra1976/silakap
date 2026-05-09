@@ -3,7 +3,6 @@ import { z } from 'zod'
 export const createUsulanSchema = z.object({
   jenisLayananId: z.coerce.bigint(),
   asnId: z.coerce.bigint(),
-  unitOrganisasiId: z.coerce.bigint(),
   tanggalUsulan: z.coerce.date(),
 })
 

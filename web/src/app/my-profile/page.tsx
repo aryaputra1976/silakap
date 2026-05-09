@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -84,7 +84,7 @@ export default function MyProfilePage() {
       ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[25px]">
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md lg:col-span-1">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] lg:col-span-1">
           <div className="flex flex-col items-center text-center">
             <span className="w-[96px] h-[96px] rounded-full bg-primary-500 text-white flex items-center justify-center text-3xl font-semibold mb-4">
               {getInitials(displayName)}
@@ -139,8 +139,8 @@ export default function MyProfilePage() {
           </div>
         </div>
 
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md lg:col-span-2">
-          <div className="trezo-card-header mb-[20px] md:mb-[25px]">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] lg:col-span-2">
+          <div className="mb-4">
             <h5 className="!mb-0">Detail Akun</h5>
           </div>
 

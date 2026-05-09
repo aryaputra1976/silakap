@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -143,7 +143,7 @@ export default function BuatAsnPage() {
       </div>
 
       <form
-        className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md"
+        className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]"
         onSubmit={handleSubmit(onSubmit)}
       >
         <div className="flex flex-wrap gap-2 mb-[25px]">

@@ -1,4 +1,4 @@
-import type { InsightRiskItem, InsightsSummary } from "@/hooks/useInsights";
+﻿import type { InsightRiskItem, InsightsSummary } from "@/hooks/useInsights";
 
 interface InsightsPanelProps {
   data: InsightsSummary | undefined;
@@ -74,8 +74,8 @@ export default function InsightsPanel({ data }: InsightsPanelProps) {
   const atRiskItems = (data?.riskItems ?? []).filter((r) => r.risk !== "LOW");
 
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center gap-3">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+      <div className="mb-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 dark:bg-[#ffffff14] flex items-center justify-center shrink-0">
           <i className="material-symbols-outlined !text-[22px]">psychology</i>
         </div>

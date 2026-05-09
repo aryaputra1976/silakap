@@ -35,8 +35,7 @@ const ProfileMenu: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    router.prefetch("/my-profile");
-    router.prefetch("/settings/change-password");
+    router.prefetch("/profil");
   }, [router]);
 
   const handleLogout = () => {
@@ -82,28 +81,15 @@ const ProfileMenu: React.FC = () => {
           <ul>
             <li>
               <Link
-                href="/my-profile"
+                href="/profil"
                 onClick={() => setActive(false)}
-                onMouseEnter={() => router.prefetch("/my-profile")}
+                onMouseEnter={() => router.prefetch("/profil")}
                 className="flex items-center gap-3 py-[8px] px-[16px] text-sm text-black dark:text-white hover:text-primary-500 hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
               >
                 <i className="material-symbols-outlined !text-[20px]">
                   account_circle
                 </i>
-                Profil Saya
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/settings/change-password"
-                onClick={() => setActive(false)}
-                onMouseEnter={() => router.prefetch("/settings/change-password")}
-                className="flex items-center gap-3 py-[8px] px-[16px] text-sm text-black dark:text-white hover:text-primary-500 hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
-              >
-                <i className="material-symbols-outlined !text-[20px]">
-                  lock_reset
-                </i>
-                Ganti Password
+                Profil &amp; Ganti Password
               </Link>
             </li>
           </ul>

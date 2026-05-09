@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -75,7 +75,7 @@ export default function LaporanPage() {
 
       {activeTab === "harian" ? (
         <div className="space-y-[20px]">
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="flex flex-col md:flex-row gap-3">
                 <input type="date" className="h-[45px] rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPageHarian(1); }} />
@@ -89,7 +89,7 @@ export default function LaporanPage() {
             </div>
           </div>
           {harian.isError ? <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">Gagal memuat data</div> : null}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             {harian.isLoading ? <div className="animate-pulse rounded-md bg-gray-200 dark:bg-[#172036] h-48" /> : (
               <>
                 <div className="table-responsive overflow-x-auto">
@@ -116,7 +116,7 @@ export default function LaporanPage() {
         </div>
       ) : (
         <div className="space-y-[20px]">
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="flex flex-col md:flex-row gap-3">
                 <select className="h-[45px] rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={tahun} onChange={(event) => { setTahun(event.target.value); setPageBulanan(1); }}><option value="">Semua Tahun</option>{[2023, 2024, 2025, 2026].map((value) => <option key={value} value={value}>{value}</option>)}</select>
@@ -130,7 +130,7 @@ export default function LaporanPage() {
             </div>
           </div>
           {bulanan.isError ? <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">Gagal memuat data</div> : null}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             {bulanan.isLoading ? <div className="animate-pulse rounded-md bg-gray-200 dark:bg-[#172036] h-48" /> : (
               <>
                 <div className="table-responsive overflow-x-auto">

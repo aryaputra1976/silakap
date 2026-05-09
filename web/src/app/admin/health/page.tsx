@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Toast from "@/components/silakap/Toast";
 import { useAdminHealth, useMaintenanceActions } from "@/hooks/useAdmin";
@@ -76,7 +76,7 @@ export default function AdminHealthPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-[25px]">
-        <section className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md xl:col-span-2">
+        <section className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] xl:col-span-2">
           <h5 className="!mb-4">System Checks</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <Info label="Node" value={data?.node ?? "-"} />
@@ -90,7 +90,7 @@ export default function AdminHealthPage() {
           </div>
         </section>
 
-        <section className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <section className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <h5 className="!mb-4">Audit ENV</h5>
           <span className={`inline-flex rounded-full px-3 py-1 text-sm ${data?.envAudit.ok ? "bg-success-100 text-success-700" : "bg-danger-100 text-danger-700"}`}>
             {data?.envAudit.ok ? "Lulus audit" : "Perlu tindakan"}
@@ -109,7 +109,7 @@ export default function AdminHealthPage() {
         </section>
       </div>
 
-      <section className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <section className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="mb-5">
           <h5 className="!mb-1">Maintenance Tools</h5>
           <p className="text-sm text-gray-500 dark:text-gray-400">Aksi operasional terbatas untuk Admin Sistem</p>
@@ -136,7 +136,7 @@ export default function AdminHealthPage() {
 function Metric({ label, value, tone }: { label: string; value: string; tone?: "success" | "warning" }) {
   const color = tone === "success" ? "text-success-600" : tone === "warning" ? "text-warning-600" : "text-black dark:text-white";
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
       <span className="block text-sm text-gray-500">{label}</span>
       <strong className={`mt-2 block text-2xl capitalize ${color}`}>{value}</strong>
     </div>

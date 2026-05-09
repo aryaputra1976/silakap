@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useState } from "react";
 import { useConfigLaporanOtomatis, useConfigLaporanOtomatisActions } from "@/hooks/useAdmin";
@@ -23,7 +23,7 @@ export default function LaporanOtomatisPage() {
         <p className="text-gray-500 dark:text-gray-400">Konfigurasi jadwal pengiriman laporan berkala</p>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-[25px]">
-        <form className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md space-y-3" onSubmit={submit}>
+        <form className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] space-y-3" onSubmit={submit}>
           <h5>Tambah Jadwal</h5>
           <select className="h-[45px] w-full rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={form.jenisLaporan} onChange={(event) => setForm((current) => ({ ...current, jenisLaporan: event.target.value }))}>
             <option>Harian</option>
@@ -40,7 +40,7 @@ export default function LaporanOtomatisPage() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))} /> Aktif</label>
           <button type="submit" className="w-full py-[10px] px-[20px] bg-primary-500 text-white rounded-md">Simpan</button>
         </form>
-        <div className="xl:col-span-2 trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <div className="xl:col-span-2 bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <h5>Jadwal Aktif</h5>
           <div className="table-responsive overflow-x-auto">
             <table className="w-full">

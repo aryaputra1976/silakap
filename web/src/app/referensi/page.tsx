@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState, type ReactNode } from "react";
 import UnitOrganisasiTree from "@/components/silakap/UnitOrganisasiTree";
@@ -69,7 +69,7 @@ export default function ReferensiPage() {
           ))}
         </ReferencePanel>
 
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md xl:col-span-2">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] xl:col-span-2">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <h5 className="!mb-0">Unit Organisasi</h5>
             <div>
@@ -149,7 +149,7 @@ function ReferencePanel({
   children: ReactNode;
 }) {
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
       <h5>{title}</h5>
       {loading ? (
         <div className="animate-pulse h-40 bg-gray-200 dark:bg-[#172036] rounded-md" />

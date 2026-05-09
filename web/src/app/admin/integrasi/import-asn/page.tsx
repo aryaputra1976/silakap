@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import { useDiagnosaAsn, useImportAsn } from "@/hooks/useAdmin";
@@ -53,7 +53,7 @@ export default function ImportAsnPage() {
         </p>
       </div>
 
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <h5>Upload File</h5>
         <p className="text-gray-500 dark:text-gray-400 mb-4">
           Kolom minimal: NIP, Nama. Opsional: NIK, Email, Nomor HP, Unit Organisasi ID.

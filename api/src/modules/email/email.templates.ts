@@ -19,11 +19,17 @@ const escapeHtml = (value: string): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 
+const renderBodyHtml = (body: string): string =>
+  body
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+    .join('')
+
 const baseTemplate = ({ recipientName, title, body, actionUrl }: EmailTemplateInput): EmailTemplate => {
   const greeting = recipientName ? `Yth. ${recipientName},` : 'Yth. pengguna SILAKAP,'
   const safeTitle = escapeHtml(title)
   const safeGreeting = escapeHtml(greeting)
-  const safeBody = escapeHtml(body)
+  const safeBody = renderBodyHtml(body)
   const safeActionUrl = actionUrl ? escapeHtml(actionUrl) : null
 
   return {
@@ -33,7 +39,7 @@ const baseTemplate = ({ recipientName, title, body, actionUrl }: EmailTemplateIn
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
         <p>${safeGreeting}</p>
         <h2 style="margin:0 0 12px;color:#111827">${safeTitle}</h2>
-        <p>${safeBody}</p>
+        ${safeBody}
         ${
           safeActionUrl
             ? `<p><a href="${safeActionUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Buka SILAKAP</a></p>`
@@ -62,7 +68,7 @@ export const emailTemplates = {
     return baseTemplate({
       recipientName: namaLengkap,
       title: 'Verifikasi Email Akun SILAKAP',
-      body: 'Terima kasih telah mendaftar di SILAKAP. Klik tombol di bawah untuk memverifikasi alamat email Anda. Link ini berlaku selama 24 jam.\n\nSetelah verifikasi, akun Anda akan menunggu aktivasi dari Admin BKPSDM.',
+      body: 'Terima kasih telah mendaftar di SILAKAP. Silakan klik tombol di bawah untuk memverifikasi alamat email Bapak/Ibu. Tautan ini berlaku selama 24 jam.\n\nSetelah email terverifikasi, akun Bapak/Ibu akan menunggu aktivasi oleh Admin BKPSDM.',
       actionUrl: verificationUrl,
     })
   },
@@ -85,7 +91,7 @@ export const emailTemplates = {
     return baseTemplate({
       recipientName: namaAdmin,
       title: 'Ada Pendaftar Baru di SILAKAP',
-      body: `Seorang ASN baru telah mendaftar dan menunggu aktivasi akun:\n\n• Nama: ${namaPendaftar}\n• NIP: ${nip}\n• Unit: ${unitNama}\n• Email: ${emailPendaftar}\n\nLogin ke SILAKAP untuk mengaktifkan akun tersebut.`,
+      body: `Seorang ASN baru telah mendaftar dan menunggu aktivasi akun:\n\n- Nama: ${namaPendaftar}\n- NIP: ${nip}\n- Unit: ${unitNama}\n- Email: ${emailPendaftar}\n\nSilakan masuk ke SILAKAP untuk memeriksa dan mengaktifkan akun tersebut apabila data sudah sesuai.`,
       actionUrl: activationUrl,
     })
   },
@@ -106,7 +112,7 @@ export const emailTemplates = {
     return baseTemplate({
       recipientName: namaLengkap,
       title: 'Peringatan: Login dari Perangkat Baru',
-      body: `Akun SILAKAP Anda baru saja diakses dari lokasi atau perangkat baru:\n\n• Waktu: ${waktu}\n• IP Address: ${ipAddress}\n• Browser/Perangkat: ${browser}\n\nJika ini bukan Anda, segera ganti password dan hubungi Admin BKPSDM.`,
+      body: `Akun SILAKAP Bapak/Ibu baru saja diakses dari lokasi atau perangkat baru:\n\n- Waktu: ${waktu}\n- IP Address: ${ipAddress}\n- Browser/Perangkat: ${browser}\n\nApabila aktivitas ini tidak dikenali, segera ganti password dan hubungi Admin BKPSDM.`,
       actionUrl: changePasswordUrl,
     })
   },
@@ -123,7 +129,7 @@ export const emailTemplates = {
     return baseTemplate({
       recipientName: namaLengkap,
       title: 'Akun SILAKAP Anda Terkunci Sementara',
-      body: `Akun Anda terkunci karena ${maxAttempts} kali percobaan login yang gagal.\n\nAkun akan terbuka otomatis dalam ${lockDurationMinutes} menit. Jika ini bukan Anda, segera hubungi Admin BKPSDM karena ada pihak yang mencoba mengakses akun Anda.`,
+      body: `Akun SILAKAP Bapak/Ibu terkunci karena terdapat ${maxAttempts} kali percobaan login yang gagal.\n\nAkun akan terbuka otomatis dalam ${lockDurationMinutes} menit. Apabila aktivitas ini tidak dikenali, segera hubungi Admin BKPSDM.`,
     })
   },
 
@@ -139,7 +145,7 @@ export const emailTemplates = {
     return baseTemplate({
       recipientName: namaLengkap,
       title: 'Sesi Aktif SILAKAP Anda Diakhiri',
-      body: `${revokedCount} sesi aktif akun SILAKAP Anda telah diakhiri secara otomatis karena batas maksimal perangkat yang dapat login secara bersamaan telah tercapai.\n\nJika Anda tidak melakukan login baru-baru ini, segera ganti password dan hubungi Admin BKPSDM.`,
+      body: `${revokedCount} sesi aktif akun SILAKAP Bapak/Ibu telah diakhiri secara otomatis karena batas maksimal perangkat yang dapat login secara bersamaan telah tercapai.\n\nApabila Bapak/Ibu tidak melakukan login baru-baru ini, segera ganti password dan hubungi Admin BKPSDM.`,
       actionUrl: changePasswordUrl,
     })
   },
@@ -148,7 +154,21 @@ export const emailTemplates = {
     return baseTemplate({
       recipientName: namaLengkap,
       title: 'Akun SILAKAP Anda Telah Dibuka',
-      body: 'Akun Anda yang sebelumnya terkunci telah dibuka oleh Admin BKPSDM. Anda sekarang dapat login kembali ke SILAKAP.',
+      body: 'Akun SILAKAP Bapak/Ibu yang sebelumnya terkunci telah dibuka oleh Admin BKPSDM. Bapak/Ibu sekarang dapat login kembali ke SILAKAP.',
+    })
+  },
+
+  passwordReset({
+    namaLengkap,
+    temporaryPassword,
+  }: {
+    namaLengkap: string
+    temporaryPassword: string
+  }): EmailTemplate {
+    return baseTemplate({
+      recipientName: namaLengkap,
+      title: 'Reset Password Akun SILAKAP',
+      body: `Password sementara akun SILAKAP Bapak/Ibu adalah:\n\n${temporaryPassword}\n\nDemi keamanan, segera login dan ganti password setelah berhasil masuk. Abaikan email ini apabila Bapak/Ibu tidak meminta reset password melalui Admin BKPSDM.`,
     })
   },
 }

@@ -138,7 +138,7 @@ const sendPostRegisterEmails = async (
   try {
     // 1. Kirim link verifikasi email ke pendaftar
     const verificationToken = signEmailVerificationToken(userId, email)
-    const verificationUrl = `${env.APP_URL}/verify-email?token=${verificationToken}`
+    const verificationUrl = `${env.APP_URL}${env.API_PREFIX}/auth/verify-email?token=${verificationToken}`
     const verifyTemplate = emailTemplates.emailVerification({ namaLengkap, verificationUrl })
     await emailService.send(verifyTemplate, email)
 

@@ -41,6 +41,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().optional().default(''),
+  EMAIL_ENABLED: booleanFromEnv.default(true),
   WHATSAPP_ENABLED: booleanFromEnv.default(false),
   WHATSAPP_WEBHOOK_URL: z.string().optional().default(''),
   WHATSAPP_TOKEN: z.string().optional().default(''),
@@ -69,6 +70,18 @@ if (env.NODE_ENV === 'production') {
   }
   if (env.JWT_REFRESH_SECRET.length < 64) {
     throw new Error('JWT_REFRESH_SECRET production wajib minimal 64 karakter acak')
+  }
+  if (env.EMAIL_ENABLED) {
+    const missingSmtp = [
+      ['SMTP_HOST', env.SMTP_HOST],
+      ['SMTP_FROM', env.SMTP_FROM],
+      ['SMTP_USER', env.SMTP_USER],
+      ['SMTP_PASS', env.SMTP_PASS],
+    ].filter(([, value]) => !value).map(([key]) => key)
+
+    if (missingSmtp.length > 0) {
+      throw new Error(`SMTP production wajib dikonfigurasi saat EMAIL_ENABLED=true: ${missingSmtp.join(', ')}`)
+    }
   }
 }
 

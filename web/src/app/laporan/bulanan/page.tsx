@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -22,7 +22,7 @@ export default function LaporanBulananPage() {
         <h1 className="!mb-1">Laporan Bulanan</h1>
         <p className="text-gray-500 dark:text-gray-400">Rekap capaian layanan per bulan</p>
       </div>
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="flex flex-col md:flex-row gap-3">
             <select className="h-[45px] rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={tahun} onChange={(event) => setTahun(event.target.value)}>
@@ -41,7 +41,7 @@ export default function LaporanBulananPage() {
           ) : null}
         </div>
       </div>
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="table-responsive overflow-x-auto">
           <table className="w-full">
             <thead><tr>{["Tahun", "Bulan", "Selesai", "Capaian SLA", "Overdue", "Aksi"].map((heading) => <th className="font-medium text-left px-[20px] py-[11px] bg-primary-50 dark:bg-[#15203c]" key={heading}>{heading}</th>)}</tr></thead>

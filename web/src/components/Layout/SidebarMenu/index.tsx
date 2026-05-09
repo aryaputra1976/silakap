@@ -80,12 +80,14 @@ const SidebarMenuContent: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             className="transition-none relative flex items-center outline-none"
           >
             <Image
-              src="/images/logo-icon.svg"
-              alt="logo-icon"
-              width={26}
-              height={26}
+              src="/images/logo-bkpsdm-white.svg"
+              alt="BKPSDM"
+              width={44}
+              height={44}
+              className="h-[44px] w-[44px] rounded-md object-contain"
+              priority
             />
-            <span className="font-bold text-black dark:text-white relative ltr:ml-[8px] rtl:mr-[8px] top-px text-xl">
+            <span className="font-bold text-black dark:text-white relative ltr:ml-[10px] rtl:mr-[10px] top-px text-xl tracking-normal">
               SILAKAP
             </span>
           </Link>

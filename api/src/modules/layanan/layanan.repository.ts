@@ -44,6 +44,12 @@ export const layananRepository = {
         asn: { select: { id: true, nipBaru: true, nama: true } },
         jenisLayanan: { select: { id: true, kode: true, nama: true } },
         unitOrganisasi: { select: { id: true, nama: true } },
+        slaTracker: {
+          where: { selesaiAt: null },
+          select: { statusSla: true, slaHabisAt: true },
+          orderBy: { masukTahap: 'asc' },
+          take: 1,
+        },
       },
       orderBy: { createdAt: 'desc' },
     })

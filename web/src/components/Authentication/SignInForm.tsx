@@ -59,9 +59,12 @@ const SignInForm: React.FC = () => {
       useAuthStore.getState().setAuth(user, data.data.accessToken, data.data.refreshToken);
       router.push(resolveDashboardPath(user.roleNama));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const response = (err as { response?: { data?: { message?: string } } })?.response;
+      const msg =
+        response?.data?.message ??
+        "Tidak dapat menghubungi server API. Pastikan backend berjalan dan alamat API benar.";
       setRetrySeconds(parseRetrySeconds(msg));
-      setError(msg ?? "Username atau password salah");
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -2,204 +2,108 @@
 
 import dynamic from "next/dynamic";
 import type { ApexOptions } from "apexcharts";
-import StatCard from "@/components/silakap/StatCard";
+import KpiStrip from "@/components/silakap/dashboard/KpiStrip";
+import AntrianTable from "@/components/silakap/dashboard/AntrianTable";
 import { AktivitasTable } from "@/components/silakap/AktivitiasTable";
 import {
   useDashboardAktivitas,
-  useDashboardAntrian,
   useDashboardLaporan,
-  useDashboardPerJenis,
   useDashboardRingkasan,
 } from "@/hooks/useDashboard";
-import { displayTahapLabel } from "@/lib/display-labels";
+import { useAuthStore } from "@/store/auth.store";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const formatDateLabel = (value: string) =>
-  new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(value));
-
-const LoadingCards = () => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[25px]">
-    {Array.from({ length: 6 }).map((_, index) => (
-      <div
-        className="animate-pulse rounded-xl bg-gray-200 dark:bg-[#172036] h-24"
-        key={index}
-      />
-    ))}
-  </div>
-);
+  new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "2-digit" }).format(new Date(value));
 
 export default function DashboardKabidPage() {
+  const user = useAuthStore((s) => s.user);
   const ringkasan = useDashboardRingkasan();
   const laporan = useDashboardLaporan();
-  const perJenis = useDashboardPerJenis();
-  const antrian = useDashboardAntrian();
   const aktivitas = useDashboardAktivitas();
 
-  const isLoading =
-    ringkasan.isLoading ||
-    laporan.isLoading ||
-    perJenis.isLoading ||
-    antrian.isLoading ||
-    aktivitas.isLoading;
-  const isError =
-    ringkasan.isError ||
-    laporan.isError ||
-    perJenis.isError ||
-    antrian.isError ||
-    aktivitas.isError;
   const laporanData = laporan.data ?? [];
+  const r = ringkasan.data;
 
   const lineOptions: ApexOptions = {
-    chart: { toolbar: { show: true }, zoom: { enabled: false } },
+    chart: { toolbar: { show: false }, zoom: { enabled: false } },
     colors: ["#605DFF", "#37D80A", "#FF4023"],
     dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 3 },
+    stroke: { curve: "smooth", width: 2 },
     xaxis: {
-      categories: laporanData.map((item) => formatDateLabel(item.tanggalLaporan)),
-      labels: { style: { colors: "#8695AA", fontSize: "12px" } },
+      categories: laporanData.map((d) => formatDateLabel(d.tanggalLaporan)),
+      labels: { style: { colors: "#8695AA", fontSize: "11px" } },
     },
-    yaxis: { labels: { style: { colors: "#64748B", fontSize: "12px" } } },
+    yaxis: { labels: { style: { colors: "#64748B", fontSize: "11px" } } },
     grid: { borderColor: "#ECEEF2" },
-    legend: { position: "top", labels: { colors: "#64748B" } },
-  };
-
-  const donutOptions: ApexOptions = {
-    labels: (perJenis.data ?? []).map(
-      (item) => item.jenisLayanan?.nama ?? "Tanpa jenis",
-    ),
-    colors: ["#605DFF", "#37D80A", "#AD63F6", "#FFC107", "#FF4023"],
-    dataLabels: { enabled: false },
-    legend: { position: "bottom", labels: { colors: "#64748B" } },
+    legend: { position: "top", labels: { colors: "#64748B" }, fontSize: "12px" },
   };
 
   return (
-    <div className="space-y-[25px]">
+    <div className="space-y-5">
+      {/* Header */}
       <div>
-        <h1 className="!mb-1">Dashboard Kepala Bidang</h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Monitoring approval dan performa layanan
+        <h1 className="!mb-0.5">Dashboard — Kepala Bidang</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {user?.namaLengkap ?? "—"} ·{" "}
+          {new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}
         </p>
       </div>
 
-      {isError ? (
-        <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">
-          Gagal memuat data
+      {(ringkasan.isError || aktivitas.isError) && (
+        <div className="py-3 px-4 text-sm text-danger-600 bg-danger-50 border border-danger-200 rounded-lg">
+          Gagal memuat sebagian data dashboard
         </div>
-      ) : null}
-
-      {isLoading ? (
-        <LoadingCards />
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[25px]">
-            <StatCard
-              label="Dalam Proses"
-              value={ringkasan.data?.totalDalamProses ?? 0}
-              icon="pending_actions"
-              color="blue"
-            />
-            <StatCard
-              label="SLA Warning"
-              value={ringkasan.data?.totalSlaWarning ?? 0}
-              icon="warning"
-              color="yellow"
-            />
-            <StatCard
-              label="SLA Overdue"
-              value={ringkasan.data?.totalSlaOverdue ?? 0}
-              icon="error"
-              color="red"
-            />
-            <StatCard
-              label="Selesai"
-              value={ringkasan.data?.totalSelesai ?? 0}
-              icon="task_alt"
-              color="green"
-            />
-            <StatCard
-              label="Dikembalikan"
-              value={ringkasan.data?.totalDikembalikan ?? 0}
-              icon="keyboard_return"
-              color="yellow"
-            />
-            <StatCard
-              label="Batal"
-              value={ringkasan.data?.totalBatal ?? 0}
-              icon="cancel"
-              color="gray"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-[25px]">
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-                <h5 className="!mb-0">Laporan Harian</h5>
-              </div>
-              <Chart
-                options={lineOptions}
-                series={[
-                  {
-                    name: "Usulan Masuk",
-                    data: laporanData.map((item) => item.usulanMasuk),
-                  },
-                  {
-                    name: "Usulan Selesai",
-                    data: laporanData.map((item) => item.usulanSelesai),
-                  },
-                  {
-                    name: "Melampaui SLA",
-                    data: laporanData.map((item) => item.melampauiSla),
-                  },
-                ]}
-                type="line"
-                height={350}
-                width="100%"
-              />
-            </div>
-
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-                <h5 className="!mb-0">Jenis Layanan</h5>
-              </div>
-              <Chart
-                options={donutOptions}
-                series={(perJenis.data ?? []).map((item) => item.total)}
-                type="donut"
-                height={350}
-                width="100%"
-              />
-            </div>
-          </div>
-
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-            <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-              <h5 className="!mb-0">Antrian Per Tahap</h5>
-            </div>
-            <div className="table-responsive overflow-x-auto">
-              <table className="w-full">
-                <tbody>
-                  {(antrian.data ?? []).slice(0, 5).map((item) => (
-                    <tr key={item.tahapSaatIni ?? "tanpa-tahap"}>
-                      <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] font-medium">
-                        {item.tahapSaatIni ? displayTahapLabel(item.tahapSaatIni) : "Tanpa tahap"}
-                      </td>
-                      <td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] text-right">
-                        {item._count._all}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <AktivitasTable data={aktivitas.data ?? []} />
-        </>
       )}
+
+      {/* KPI singkat */}
+      {ringkasan.isLoading ? (
+        <div className="h-24 rounded-xl bg-gray-100 dark:bg-[#172036] animate-pulse" />
+      ) : (
+        <KpiStrip
+          items={[
+            { label: "Dalam proses",   value: r?.totalDalamProses ?? 0, color: "blue"   },
+            { label: "SLA warning",    value: r?.totalSlaWarning ?? 0,  color: "orange" },
+            { label: "SLA overdue",    value: r?.totalSlaOverdue ?? 0,  color: "red"    },
+            { label: "Selesai",        value: r?.totalSelesai ?? 0,     color: "green"  },
+          ]}
+        />
+      )}
+
+      {/* Antrian — utama untuk Kabid */}
+      <div className="bg-white dark:bg-[#0c1427] rounded-xl border border-gray-100 dark:border-[#172036] p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h5 className="!mb-0.5">Antrian aktif</h5>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Filter &quot;overdue&quot; untuk melihat yang kritis — klik baris untuk buka detail
+            </p>
+          </div>
+        </div>
+        <AntrianTable />
+      </div>
+
+      {/* Laporan harian — secondary */}
+      {laporanData.length > 0 && (
+        <div className="bg-white dark:bg-[#0c1427] rounded-xl border border-gray-100 dark:border-[#172036] p-5">
+          <h5 className="!mb-4">Tren 7 hari terakhir</h5>
+          <Chart
+            options={lineOptions}
+            series={[
+              { name: "Masuk",       data: laporanData.map((d) => d.usulanMasuk) },
+              { name: "Selesai",     data: laporanData.map((d) => d.usulanSelesai) },
+              { name: "Lewat SLA",   data: laporanData.map((d) => d.melampauiSla) },
+            ]}
+            type="line"
+            height={220}
+            width="100%"
+          />
+        </div>
+      )}
+
+      {/* Aktivitas terakhir */}
+      <AktivitasTable data={aktivitas.data ?? []} limit={10} />
     </div>
   );
 }

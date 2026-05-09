@@ -122,7 +122,7 @@ export default function DashboardAdminPage() {
   };
 
   return (
-    <div className="space-y-[25px]">
+    <div className="space-y-5">
       <div>
         <h1 className="!mb-1">Dashboard Administrator</h1>
         <p className="text-gray-500 dark:text-gray-400">
@@ -140,7 +140,7 @@ export default function DashboardAdminPage() {
         <LoadingCards />
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-[25px]">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
             <StatCard
               label="Draft"
               value={ringkasan.data?.totalDraft ?? 0}
@@ -210,10 +210,8 @@ export default function DashboardAdminPage() {
             </div>
           ) : null}
 
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-xl border border-gray-100 dark:border-[#172036]">
-            <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-              <h5 className="!mb-0">Aksi Cepat</h5>
-            </div>
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+            <h5 className="!mb-4">Aksi Cepat</h5>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {quickActions.map((action) => (
                 <Link
@@ -234,11 +232,9 @@ export default function DashboardAdminPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-[25px]">
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-                <h5 className="!mb-0">Laporan Harian</h5>
-              </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+              <h5 className="!mb-4">Laporan Harian</h5>
               <Chart
                 options={columnOptions}
                 series={[
@@ -265,10 +261,8 @@ export default function DashboardAdminPage() {
               />
             </div>
 
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-                <h5 className="!mb-0">Jenis Layanan</h5>
-              </div>
+            <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+              <h5 className="!mb-4">Jenis Layanan</h5>
               <Chart
                 options={donutOptions}
                 series={(perJenis.data ?? []).map((item) => item.total)}
@@ -279,10 +273,8 @@ export default function DashboardAdminPage() {
             </div>
           </div>
 
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-            <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-              <h5 className="!mb-0">Antrian Per Tahap</h5>
-            </div>
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+            <h5 className="!mb-4">Antrian Per Tahap</h5>
             <div className="table-responsive overflow-x-auto">
               <table className="w-full">
                 <thead className="text-black dark:text-white">

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import ConfirmModal from "./ConfirmModal";
@@ -99,12 +99,26 @@ export default function ActionButtons({
     setModalAction(null);
   };
 
+  const contextMsg: string | null = (() => {
+    if (showSubmit) return "Pastikan semua dokumen wajib sudah diunggah sebelum submit.";
+    if (showTerima) return "Terdapat usulan baru yang menunggu konfirmasi Anda.";
+    if (showResubmit) return "Perbaikan selesai? Klik Kirim Ulang untuk meneruskan ke Analis.";
+    if (showSetujui) return "Tinjau usulan, lalu berikan persetujuan atau kembalikan untuk perbaikan.";
+    if (showTeruskan) return "Periksa kelengkapan dokumen, lalu teruskan ke tahap berikutnya atau kembalikan.";
+    return null;
+  })();
+
+  const hasAnyAction = showSubmit || showTerima || showTeruskan || showSetujui || showKembalikan || showBatal || showResubmit;
+
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px]">
-        <h5 className="!mb-0">Aksi Workflow</h5>
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+      <div className="mb-4">
+        <h5 className="!mb-0">Aksi tersedia</h5>
+        {contextMsg && hasAnyAction && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{contextMsg}</p>
+        )}
       </div>
-      <div className="trezo-card-content flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3">
         {showSubmit ? (
           <button
             type="button"

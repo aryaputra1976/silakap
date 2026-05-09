@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -32,7 +32,7 @@ export default function ArsipPage() {
           Daftar usulan layanan yang telah diarsipkan
         </p>
       </div>
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input className="h-[45px] rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" placeholder="Cari nomor usulan / nama ASN" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
           <input type="date" className="h-[45px] rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[14px]" value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPage(1); }} />
@@ -40,7 +40,7 @@ export default function ArsipPage() {
         </div>
       </div>
       {list.isError ? <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">Gagal memuat data</div> : null}
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         {list.isLoading ? <div className="animate-pulse rounded-md bg-gray-200 dark:bg-[#172036] h-48" /> : list.data?.data.length ? (
           <>
             <div className="table-responsive overflow-x-auto">

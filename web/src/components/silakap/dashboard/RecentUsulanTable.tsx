@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import StatusBadge from "@/components/silakap/StatusBadge";
@@ -28,8 +28,8 @@ export default function RecentUsulanTable({ data }: RecentUsulanTableProps) {
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-      <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-start justify-between flex-wrap gap-3">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+      <div className="mb-4 flex items-start justify-between flex-wrap gap-3">
         <div>
           <h5 className="!mb-0">Usulan Terbaru</h5>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

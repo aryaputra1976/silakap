@@ -67,8 +67,8 @@ export default function ConfirmModal({
             transition
             className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-[550px] data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
           >
-            <div className="trezo-card w-full bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
-              <div className="trezo-card-header bg-gray-50 dark:bg-[#15203c] mb-[20px] md:mb-[25px] flex items-center justify-between -mx-[20px] md:-mx-[25px] -mt-[20px] md:-mt-[25px] p-[20px] md:p-[25px] rounded-t-md">
+            <div className="w-full bg-white dark:bg-[#0c1427] p-5 rounded-xl">
+              <div className="bg-gray-50 dark:bg-[#15203c] mb-5 flex items-center justify-between -mx-5 -mt-5 px-5 py-4 rounded-t-xl border-b border-gray-100 dark:border-[#172036]">
                 <h5 className="!mb-0">{title}</h5>
                 <button
                   type="button"
@@ -78,7 +78,7 @@ export default function ConfirmModal({
                   <i className="ri-close-fill"></i>
                 </button>
               </div>
-              <div className="trezo-card-content">
+              <div>
                 {description ? (
                   <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
                     {description}

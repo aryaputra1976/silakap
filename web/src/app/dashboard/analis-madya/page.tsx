@@ -261,14 +261,14 @@ export default function DashboardAnalisMadyaPage() {
               ]}
             />
           )}
-          <div className="trezo-card rounded-xl bg-white p-6 dark:bg-[#0c1427]">
+          <div className="bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036]">
             <AntrianTable />
           </div>
         </>
       ) : null}
 
       {activeTab === "Verifikasi aktif" ? (
-        <div className="trezo-card rounded-xl bg-white p-6 dark:bg-[#0c1427]">
+        <div className="bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036]">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h5 className="!mb-1">Verifikasi peremajaan aktif</h5>

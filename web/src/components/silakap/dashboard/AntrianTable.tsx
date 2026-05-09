@@ -83,7 +83,7 @@ function FilterSelect({
 }) {
   return (
     <select
-      className="border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-sm rounded-lg px-3 py-2 pr-8 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-300 appearance-none bg-no-repeat"
+      className="w-full border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-sm rounded-lg px-3 py-2 pr-8 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-300 appearance-none bg-no-repeat"
       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`, backgroundPosition: "right 8px center" }}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -173,7 +173,7 @@ export default function AntrianTable() {
       </div>
 
       {/* Filter row */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
         <FilterSelect value={jenisLayananId} onChange={(v) => { setJenisLayananId(v); resetPage(); }}>
           <option value="">Semua jenis</option>
           {jenisList?.map((j) => (
@@ -194,7 +194,7 @@ export default function AntrianTable() {
         </FilterSelect>
       </div>
 
-      {/* Table */}
+      {/* Content */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
@@ -207,7 +207,48 @@ export default function AntrianTable() {
         </p>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          {/* Mobile: card list */}
+          <div className="md:hidden divide-y divide-gray-100 dark:divide-[#172036] -mx-1">
+            {filteredRows.map((item) => (
+              <Link
+                key={item.id}
+                href={item.detailHref ?? `/layanan/${item.id}`}
+                className="flex items-start gap-3 py-3 px-1 hover:bg-gray-50 dark:hover:bg-[#172036]/40 transition-colors"
+              >
+                <div className="mt-1 shrink-0">
+                  {item.sla ? (
+                    <SlaDot statusSla={item.sla.statusSla} />
+                  ) : (
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-200" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                        {item.asn.nama}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{item.jenisLayanan.nama}</p>
+                    </div>
+                    <AntriannStatusBadge status={item.status} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[11px] text-gray-400">{item.unitOrganisasi.singkatan}</span>
+                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                    <span className="text-[11px] text-gray-400">{formatTanggal(item.tanggalUsulan)}</span>
+                  </div>
+                  {item.sla && (
+                    <div className="mt-1.5">
+                      <SlaCell sla={item.sla} />
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-[#172036]">
@@ -285,11 +326,13 @@ export default function AntrianTable() {
               </span>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
                   className="px-3 py-1 rounded border border-gray-200 dark:border-[#172036] disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-[#172036]"
                 >‹</button>
                 <button
+                  type="button"
                   disabled={page * (data?.limit ?? 20) >= (data?.total ?? 0)}
                   onClick={() => setPage((p) => p + 1)}
                   className="px-3 py-1 rounded border border-gray-200 dark:border-[#172036] disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-[#172036]"

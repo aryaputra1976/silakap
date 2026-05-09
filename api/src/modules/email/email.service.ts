@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { env } from '@/core/config/env'
+import { logger } from '@/core/logger/logger'
 import { emailTemplates, type EmailTemplate } from './email.templates'
 
 type MailRecipient = {
@@ -15,7 +16,30 @@ type SendNotificationEmailInput = {
   link?: string | null
 }
 
-const isConfigured = (): boolean => Boolean(env.SMTP_HOST && env.SMTP_FROM)
+const warnedContexts = new Set<string>()
+
+const missingConfig = (): string[] => [
+  ['SMTP_HOST', env.SMTP_HOST],
+  ['SMTP_FROM', env.SMTP_FROM],
+  ['SMTP_USER', env.SMTP_USER],
+  ['SMTP_PASS', env.SMTP_PASS],
+].filter(([, value]) => !value).map(([key]) => key)
+
+const isEnabled = (): boolean => env.EMAIL_ENABLED
+
+const isConfigured = (): boolean => isEnabled() && missingConfig().length === 0
+
+const warnUnavailable = (context: string, to?: string): void => {
+  const key = `${context}:${missingConfig().join(',')}`
+  if (warnedContexts.has(key)) return
+  warnedContexts.add(key)
+  logger.warn('Email SMTP belum dikonfigurasi; pengiriman email dilewati', {
+    context,
+    to,
+    missingConfig: missingConfig(),
+    emailEnabled: env.EMAIL_ENABLED,
+  })
+}
 
 const transporter = () =>
   nodemailer.createTransport({
@@ -37,10 +61,15 @@ const templateFor = (type: string, input: Parameters<typeof emailTemplates.berka
 }
 
 export const emailService = {
+  isEnabled,
   isConfigured,
 
   async send(template: EmailTemplate, to: string): Promise<void> {
-    if (!isConfigured()) return
+    if (!isEnabled()) return
+    if (!isConfigured()) {
+      warnUnavailable(template.subject, to)
+      return
+    }
     await transporter().sendMail({
       from: env.SMTP_FROM,
       to,
@@ -51,7 +80,7 @@ export const emailService = {
   },
 
   async sendNotification(input: SendNotificationEmailInput): Promise<void> {
-    if (!input.recipient.email || !isConfigured()) return
+    if (!input.recipient.email) return
     const actionUrl = input.link?.startsWith('http') ? input.link : input.link ? `${env.APP_URL}${input.link}` : null
     const template = templateFor(input.type, {
       recipientName: input.recipient.namaLengkap,

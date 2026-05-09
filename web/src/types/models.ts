@@ -69,6 +69,7 @@ export interface UsulanLayanan {
   asn?: { id: string; nipBaru: string; nama: string };
   jenisLayanan?: { id: string; kode: string; nama: string };
   unitOrganisasi?: { id: string; nama: string };
+  slaTracker?: Pick<SlaTracker, "statusSla" | "slaHabisAt">[];
 }
 
 export interface Asn {
@@ -281,20 +282,44 @@ export interface LaporanBulanan {
   createdAt: string;
 }
 
+export type JenisPensiun = "BUP" | "APS" | "JandaDuda" | "Uzur" | "Dini";
+export type SubJenisUzur = "KarenaDinas" | "BukanKarenaDinas";
+export type StatusPensiun =
+  | "Terdeteksi" | "DraftBerkas" | "ValidasiSyarat" | "PersetujuanPejabat"
+  | "VerifikasiBKPSDM" | "InputSIASN" | "CetakDokumen" | "DikirimKanreg"
+  | "SKTerbit" | "Ditolak" | "Dibatalkan";
+
 export interface PerencanaanPensiun {
   id: string;
   asnId: string;
+  jenisPensiun: JenisPensiun;
+  statusPensiun: StatusPensiun;
+  isDarurat: boolean;
+  subJenisUzur: SubJenisUzur | null;
+  autoDetected: boolean;
   tanggalBup: string;
   tahunBup: number;
   bupUsia: number;
+  tanggalTmt: string | null;
+  dokumenChecklist: Record<string, boolean> | null;
   keterangan: string | null;
-  sudahDiproses: boolean;
+  catatanPenolakan: string | null;
+  tanggalPengajuanKeBkn: string | null;
+  nomorSkPensiun: string | null;
+  tanggalSkTerbit: string | null;
   createdAt: string;
+  updatedAt: string;
   asn: {
     id: string;
     nipBaru: string;
     nama: string;
     unitOrganisasiId: string | null;
+    tanggalLahir: string | null;
+    mkTahun: number | null;
+    mkBulan: number | null;
+    statusPegawai: string;
+    jabatan: { bup: number | null; nama: string } | null;
+    unitOrganisasi: { id: string; nama: string } | null;
   } | null;
 }
 

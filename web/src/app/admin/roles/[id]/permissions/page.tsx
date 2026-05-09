@@ -1,50 +1,82 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import Toast from "@/components/silakap/Toast";
-import { useRoleActions, useRolePermissions } from "@/hooks/useAdmin";
-import { useToast } from "@/hooks/useToast";
-import type { Permission } from "@/types/models";
+import { FormEvent, useState } from "react";
+import ConfirmModal from "@/components/silakap/ConfirmModal";
+import { useRoleActions, useRoleList } from "@/hooks/useAdmin";
+import type { Role } from "@/types/models";
 
-export default function RolePermissionsPage() {
-  const params = useParams<{ id: string }>();
-  const query = useRolePermissions(params.id);
+interface RoleForm {
+  id: string;
+  nama: string;
+  deskripsi: string;
+  isActive: boolean;
+}
+
+const emptyForm: RoleForm = { id: "", nama: "", deskripsi: "", isActive: true };
+
+export default function AdminRolesPage() {
+  const roles = useRoleList();
   const actions = useRoleActions();
-  const { toast, showToast, hideToast } = useToast();
-  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [modalOpen, setModalOpen] = useState(false);
+  const [mode, setMode] = useState<"create" | "edit">("create");
+  const [form, setForm] = useState<RoleForm>(emptyForm);
+  const [deleteRole, setDeleteRole] = useState<Role | null>(null);
 
-  useEffect(() => {
-    if (query.data) {
-      setChecked(new Set(query.data.permissions.map((permission) => permission.id)));
-    }
-  }, [query.data]);
-
-  const grouped = useMemo(() => {
-    const groups: Record<string, Permission[]> = {};
-    (query.data?.permissions ?? []).forEach((permission) => {
-      const prefix = permission.nama.split(":")[0] || "lainnya";
-      groups[prefix] = [...(groups[prefix] ?? []), permission];
+  const openCreate = () => {
+    setMode("create");
+    setForm(emptyForm);
+    setModalOpen(true);
+  };
+  const openEdit = (role: Role) => {
+    setMode("edit");
+    setForm({
+      id: role.id,
+      nama: role.nama,
+      deskripsi: role.deskripsi ?? "",
+      isActive: role.isActive,
     });
-    return groups;
-  }, [query.data?.permissions]);
-
-  const save = () => {
-    const permissionIds = Array.from(checked)
-      .map((id) => Number(id))
-      .filter((id) => Number.isFinite(id));
-    actions.setPermissions.mutate(
-      { id: params.id, permissionIds },
-      { onSuccess: () => showToast("Permissions berhasil disimpan", "success") },
-    );
+    setModalOpen(true);
+  };
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const body = {
+      nama: form.nama,
+      deskripsi: form.deskripsi || null,
+      isActive: form.isActive,
+    };
+    const onSuccess = () => setModalOpen(false);
+    if (mode === "create") {
+      actions.create.mutate({ nama: form.nama, deskripsi: form.deskripsi || undefined }, { onSuccess });
+    } else {
+      actions.update.mutate({ id: form.id, body }, { onSuccess });
+    }
   };
 
   return (
     <div className="space-y-[25px]">
-      <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm text-gray-500 dark:text-gray-400">Roles / Edit Permissions</p><h1 className="!mb-0">Permissions — {query.data?.nama ?? ""}</h1></div><Link href="/admin/roles" className="py-[10px] px-[20px] border border-gray-200 dark:border-[#172036] rounded-md">← Kembali</Link></div>
-      {query.isLoading ? <div className="animate-pulse rounded-xl bg-gray-200 dark:bg-[#172036] h-72" /> : query.isError || !query.data ? <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">Gagal memuat data</div> : <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md space-y-5">{Object.entries(grouped).map(([group, permissions]) => <div key={group}><h5 className="capitalize">{group}</h5><div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">{permissions.map((permission) => <label key={permission.id} className="rounded-md border border-gray-100 dark:border-[#172036] p-3 flex items-start gap-3"><input type="checkbox" checked={checked.has(permission.id)} onChange={(event) => setChecked((current) => { const next = new Set(current); if (event.target.checked) next.add(permission.id); else next.delete(permission.id); return next; })} /><span><span className="block font-medium text-black dark:text-white">{permission.nama}</span><span className="text-sm text-gray-500">{permission.deskripsi ?? "-"}</span></span></label>)}</div></div>)}<button type="button" className="py-[10px] px-[20px] bg-primary-500 text-white rounded-md" onClick={save} disabled={actions.setPermissions.isPending}>Simpan</button></div>}
-      {toast.visible ? <Toast message={toast.message} type={toast.type} onClose={hideToast} /> : null}
+      <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="!mb-1">Manajemen Role</h1><p className="text-gray-500 dark:text-gray-400">Kelola role dan hak akses</p></div><button type="button" className="py-[10px] px-[20px] bg-primary-500 text-white rounded-md" onClick={openCreate}>+ Tambah Role</button></div>
+      {roles.isError ? <div className="py-[1rem] px-[1rem] text-danger-500 bg-danger-50 border border-danger-200 rounded-md">Gagal memuat data</div> : null}
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
+        {roles.isLoading ? <div className="animate-pulse rounded-md bg-gray-200 dark:bg-[#172036] h-48" /> : <div className="table-responsive overflow-x-auto"><table className="w-full"><thead><tr>{["Nama Role", "Deskripsi", "Status", "Aksi"].map((heading) => <th className="font-medium text-left px-[20px] py-[11px] bg-primary-50 dark:bg-[#15203c]" key={heading}>{heading}</th>)}</tr></thead><tbody>{(roles.data ?? []).map((role) => <tr key={role.id}><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] font-medium">{role.nama}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">{role.deskripsi ?? "-"}</td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${role.isActive ? "bg-success-100 text-success-700" : "bg-danger-100 text-danger-700"}`}>{role.isActive ? "Aktif" : "Nonaktif"}</span></td><td className="px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"><div className="flex flex-wrap gap-2"><button type="button" className="text-warning-700" onClick={() => openEdit(role)}>Edit</button><button type="button" className="text-danger-500" onClick={() => setDeleteRole(role)}>Hapus</button><Link className="text-primary-500" href={`/admin/roles/${role.id}/permissions`}>Kelola Permissions</Link></div></td></tr>)}</tbody></table></div>}
+      </div>
+      {modalOpen ? <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><form className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[520px] space-y-4" onSubmit={submit}><h5>{mode === "create" ? "Tambah Role" : "Edit Role"}</h5><input required className="h-[45px] rounded-md border px-[14px] w-full bg-white dark:bg-[#0c1427]" placeholder="Nama role" value={form.nama} onChange={(event) => setForm((current) => ({ ...current, nama: event.target.value }))} /><textarea className="min-h-[90px] rounded-md border px-[14px] py-3 w-full bg-white dark:bg-[#0c1427]" placeholder="Deskripsi" value={form.deskripsi} onChange={(event) => setForm((current) => ({ ...current, deskripsi: event.target.value }))} /><label className="flex items-center gap-2"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))} /> Aktif</label><div className="flex justify-end gap-3"><button type="button" className="px-5 py-2 rounded-md border" onClick={() => setModalOpen(false)}>Batal</button><button type="submit" className="px-5 py-2 rounded-md bg-primary-500 text-white">Simpan</button></div></form></div> : null}
+      <ConfirmModal
+        isOpen={Boolean(deleteRole)}
+        title="Hapus Role"
+        description={`Hapus role ${deleteRole?.nama ?? "ini"}? Pastikan tidak ada pengguna yang masih bergantung pada role ini.`}
+        onClose={() => setDeleteRole(null)}
+        onConfirm={() => {
+          if (!deleteRole) return;
+          actions.remove.mutate(deleteRole.id, {
+            onSuccess: () => setDeleteRole(null),
+          });
+        }}
+        showTextarea={false}
+        confirmLabel="Hapus"
+        confirmColor="red"
+        loading={actions.remove.isPending}
+      />
     </div>
   );
 }

@@ -36,6 +36,14 @@ export const perencanaanController = {
     }
   },
 
+  updateStatus: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      sendSuccess(res, await perencanaanService.updateStatus(req.params.id, req.body, req.user), 'Status pensiun berhasil diperbarui')
+    } catch (error) {
+      next(error)
+    }
+  },
+
   remove: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await perencanaanService.remove(req.params.id, req.user)
@@ -45,9 +53,9 @@ export const perencanaanController = {
     }
   },
 
-  tandaiSelesai: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  scanBup: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      sendSuccess(res, await perencanaanService.tandaiSelesai(req.params.id, req.user), 'Perencanaan berhasil ditandai selesai')
+      sendSuccess(res, await perencanaanService.scanBupHarian(), 'Scan BUP selesai')
     } catch (error) {
       next(error)
     }

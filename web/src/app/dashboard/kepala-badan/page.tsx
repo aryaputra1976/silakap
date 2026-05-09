@@ -95,7 +95,7 @@ export default function DashboardKepalaBadanPage() {
               {/* Main content split */}
               <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
                 {/* Volume per layanan */}
-                <div className="xl:col-span-3 trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl">
+                <div className="xl:col-span-3 bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036]">
                   <h5 className="!mb-5 font-semibold text-gray-800 dark:text-white">
                     Volume pengajuan per layanan dan peremajaan (bulan ini)
                   </h5>
@@ -105,7 +105,7 @@ export default function DashboardKepalaBadanPage() {
                 {/* Right column */}
                 <div className="xl:col-span-2 flex flex-col gap-5">
                   {/* Kepatuhan per operator */}
-                  <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl flex-1">
+                  <div className="bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036] flex-1">
                     <h5 className="!mb-4 font-semibold text-gray-800 dark:text-white">
                       Kepatuhan SLA per operator
                     </h5>
@@ -113,7 +113,7 @@ export default function DashboardKepalaBadanPage() {
                   </div>
 
                   {/* Antrian status */}
-                  <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl">
+                  <div className="bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036]">
                     <h5 className="!mb-4 font-semibold text-gray-800 dark:text-white">
                       Status antrian saat ini
                     </h5>
@@ -132,7 +132,7 @@ export default function DashboardKepalaBadanPage() {
 
       {/* Tab: Statistik ASN */}
       {activeTab === "Statistik ASN" && (
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl text-center py-16">
+        <div className="bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036] text-center py-16">
           <i className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">
             bar_chart
           </i>
@@ -144,7 +144,7 @@ export default function DashboardKepalaBadanPage() {
 
       {/* Tab: Eskalasi aktif */}
       {activeTab === "Eskalasi aktif" && (
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-6 rounded-xl">
+        <div className="bg-white dark:bg-[#0c1427] p-6 rounded-xl border border-gray-100 dark:border-[#172036]">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h5 className="font-semibold text-gray-800 dark:text-white">

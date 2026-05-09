@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Toast from "@/components/silakap/Toast";
@@ -26,7 +26,7 @@ export default function PengaturanEmailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[25px]">
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <h5>Status SMTP</h5>
           <span className={`inline-flex rounded-full px-3 py-1 text-sm ${status.data?.configured ? "bg-success-100 text-success-700" : "bg-warning-100 text-warning-700"}`}>
             {status.data?.configured ? "Terkonfigurasi" : "Belum lengkap"}
@@ -38,7 +38,7 @@ export default function PengaturanEmailPage() {
           </div>
         </div>
 
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md lg:col-span-2">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] lg:col-span-2">
           <h5>Test Kirim Email</h5>
           <div className="flex flex-col md:flex-row gap-3">
             <input

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -7,6 +7,7 @@ import { useState } from "react";
 import ActionButtons from "@/components/silakap/ActionButtons";
 import SlaCountdown from "@/components/silakap/SlaCountdown";
 import StatusBadge from "@/components/silakap/StatusBadge";
+import StatusContextBanner from "@/components/silakap/StatusContextBanner";
 import WorkflowTimeline from "@/components/silakap/WorkflowTimeline";
 import {
   downloadDokumenOutput,
@@ -179,12 +180,56 @@ export default function LayananDetailPage() {
   const outputDokumen =
     usulan.dokumenOutput?.find((doc) => Boolean(doc.namaFile)) ?? null;
 
+  const STAGE_ROLES: Record<string, string> = {
+    Draft: "Pengelola OPD",
+    VerifikasiAP: "Analis Pertama",
+    VerifikasiAM: "Analis Muda",
+    QualityControl: "Analis Madya",
+    ApprovalKabid: "Kabid",
+    ApprovalKepalaBadan: "Kepala Badan",
+  };
+
   return (
     <div className="space-y-[25px]">
+      {/* Print-only header */}
+      <div className="print-only border-b-2 border-gray-800 pb-4 mb-4">
+        <p className="text-lg font-bold">SILAKAP — Sistem Informasi Layanan Administrasi Kepegawaian</p>
+        <p className="text-sm text-gray-600 mt-1">
+          Nomor Usulan: <strong className="font-mono">{usulan.nomorUsulan}</strong>
+          {" · "}Dicetak: {new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short" }).format(new Date())}
+        </p>
+      </div>
+
+      {/* Toolbar: back + cetak */}
+      <div className="no-print flex items-center justify-between gap-3">
+        <Link
+          href="/layanan"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
+        >
+          <i className="material-symbols-outlined !text-[16px]">arrow_back</i>
+          Kembali ke daftar
+        </Link>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-[#172036] text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#15203c] hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+        >
+          <i className="material-symbols-outlined !text-[15px]">print</i>
+          Cetak
+        </button>
+      </div>
+
+      {/* Status context banner — full width above grid */}
+      <StatusContextBanner
+        status={usulan.status}
+        tahapSaatIni={usulan.tahapSaatIni}
+        userRole={user?.roleNama ?? ""}
+      />
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-[25px]">
         <div className="xl:col-span-2 space-y-[25px]">
           {/* ── Informasi Usulan ─────────────────────────── */}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <div className="flex items-start justify-between gap-3 mb-4">
               <h5 className="!mb-0">Informasi usulan</h5>
               {canUpload && (
@@ -225,7 +270,7 @@ export default function LayananDetailPage() {
             </div>
 
             {/* Meta row */}
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div className="rounded-md bg-gray-50 dark:bg-[#15203c] px-3 py-2">
                 <p className="text-xs text-gray-400 mb-0.5">TANGGAL USULAN</p>
                 <p className="font-semibold text-black dark:text-white">{dayjs(usulan.tanggalUsulan).format("DD MMM YYYY")}</p>
@@ -286,15 +331,17 @@ export default function LayananDetailPage() {
             </div>
           ) : null}
 
-          <ActionButtons
-            usulan={usulan}
-            userRole={user?.roleNama ?? ""}
-            onAction={handleAction}
-            loading={actionLoading}
-          />
+          <div className="no-print">
+            <ActionButtons
+              usulan={usulan}
+              userRole={user?.roleNama ?? ""}
+              onAction={handleAction}
+              loading={actionLoading}
+            />
+          </div>
 
           {usulan.status === "Selesai" ? (
-            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+            <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
               {outputDokumen ? (
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -333,7 +380,7 @@ export default function LayananDetailPage() {
 
           <WorkflowTimeline logs={usulan.workflowLog} />
 
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5 className="!mb-5">Dokumen persyaratan</h5>
             <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
               Upload dokumen sesuai persyaratan. Jika dikembalikan, unggah ulang dokumen yang diminta.
@@ -396,7 +443,7 @@ export default function LayananDetailPage() {
                       </div>
 
                       {canUpload && (
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <div className="no-print flex flex-wrap items-center gap-2 mt-2">
                           <input
                             type="file"
                             className="text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-[#172036] rounded-md px-3 py-1.5 bg-white dark:bg-[#0c1427] w-full sm:w-auto"
@@ -463,7 +510,7 @@ export default function LayananDetailPage() {
         <div className="space-y-[25px]">
 
           {/* Info Cepat */}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5 className="!mb-4">Info cepat</h5>
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between gap-2">
@@ -490,40 +537,66 @@ export default function LayananDetailPage() {
           </div>
 
           {/* Alur Persetujuan */}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5 className="!mb-4">Alur persetujuan</h5>
             <div className="relative">
               {STAGES.map((stage, idx) => {
                 const stageIdx = STATUS_ORDER.indexOf(stage.key);
                 const isDone = currentIdx > stageIdx || usulan.status === "Selesai";
-                const isActive = !isDone && currentIdx === stageIdx;
+                const isActive = !isDone && currentIdx === stageIdx && usulan.status !== "Dikembalikan" && usulan.status !== "Ditolak";
+                const responsibleRole = STAGE_ROLES[stage.key];
                 return (
                   <div key={stage.key} className="flex items-start gap-3 mb-3 last:mb-0">
                     <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-3 h-3 rounded-full mt-0.5 ${isDone ? "bg-success-500" : isActive ? "bg-primary-500" : "bg-gray-200 dark:bg-gray-700"}`} />
+                      {isDone ? (
+                        <div className="w-5 h-5 rounded-full bg-success-500 flex items-center justify-center mt-0.5">
+                          <i className="material-symbols-outlined !text-[12px] text-white">check</i>
+                        </div>
+                      ) : isActive ? (
+                        <span className="relative flex h-5 w-5 mt-0.5 items-center justify-center">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-50" />
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-primary-500" />
+                        </span>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-200 dark:border-gray-700 mt-0.5" />
+                      )}
                       {idx < STAGES.length - 1 && (
-                        <div className={`w-0.5 h-5 mt-1 ${isDone ? "bg-success-300 dark:bg-success-700" : "bg-gray-200 dark:bg-gray-700"}`} />
+                        <div className={`w-0.5 h-5 mt-1 ${isDone ? "bg-success-300 dark:bg-success-700" : "bg-gray-200 dark:bg-[#172036]"}`} />
                       )}
                     </div>
-                    <div className="flex items-center justify-between w-full gap-2 min-w-0">
-                      <span className={`text-sm ${isDone ? "text-gray-700 dark:text-gray-300" : isActive ? "font-semibold text-black dark:text-white" : "text-gray-400 dark:text-gray-600"}`}>
+                    <div className="flex-1 min-w-0 -mt-0.5">
+                      <p className={`text-sm font-medium leading-tight ${isDone ? "text-gray-500 dark:text-gray-400 line-through" : isActive ? "text-black dark:text-white" : "text-gray-400 dark:text-gray-600"}`}>
                         {stage.label}
-                      </span>
-                      {isDone && (
-                        <span className="text-xs font-semibold text-success-600 dark:text-success-400 shrink-0">Selesai</span>
-                      )}
-                      {isActive && (
-                        <span className="text-xs font-semibold text-primary-600 dark:text-primary-400 shrink-0">Aktif</span>
+                      </p>
+                      {responsibleRole && (
+                        <p className={`text-[11px] mt-0.5 ${isActive ? "text-primary-500 dark:text-primary-400 font-medium" : "text-gray-400 dark:text-gray-600"}`}>
+                          {responsibleRole}
+                          {isActive && " · sedang diproses"}
+                          {isDone && " · selesai"}
+                        </p>
                       )}
                     </div>
                   </div>
                 );
               })}
+              {/* Terminal state */}
+              {(usulan.status === "Selesai" || usulan.status === "Ditolak") && (
+                <div className="flex items-start gap-3 mt-3">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${usulan.status === "Selesai" ? "bg-success-500" : "bg-danger-500"}`}>
+                    <i className="material-symbols-outlined !text-[12px] text-white">
+                      {usulan.status === "Selesai" ? "task_alt" : "close"}
+                    </i>
+                  </div>
+                  <p className={`text-sm font-semibold mt-0.5 ${usulan.status === "Selesai" ? "text-success-600 dark:text-success-400" : "text-danger-600 dark:text-danger-400"}`}>
+                    {usulan.status === "Selesai" ? "Selesai" : "Ditolak"}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Catatan Per Tahap */}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5 className="!mb-2">Catatan per tahap</h5>
             {[
               ["AP", usulan.catatanAp],
@@ -539,7 +612,7 @@ export default function LayananDetailPage() {
           </div>
 
           {/* Riwayat Revisi */}
-          <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+          <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
             <h5 className="!mb-3">Riwayat revisi</h5>
             {usulan.revisi?.length ? (
               <div className="space-y-3">

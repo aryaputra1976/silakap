@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import StatCard from "@/components/silakap/StatCard";
 import {
@@ -30,7 +30,7 @@ export default function StatistikPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-[25px]">
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <h5>Antrian Per Tahap</h5>
           <div className="space-y-3">
             {(antrian.data ?? []).map((item) => (
@@ -41,7 +41,7 @@ export default function StatistikPage() {
             ))}
           </div>
         </div>
-        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
           <h5>Usulan Per Jenis Layanan</h5>
           <div className="space-y-3">
             {(perJenis.data ?? []).map((item) => (

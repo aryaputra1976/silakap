@@ -1,7 +1,7 @@
 "use client";
 
 import dayjs from "dayjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useAsnSearch,
@@ -17,8 +17,24 @@ const STEPS = [
   { label: "Konfirmasi", icon: "check" },
 ];
 
+type CardTheme = { icon: string; iconBg: string; iconColor: string; accent: string };
+const THEME_MAP: Record<string, CardTheme> = {
+  CUTI:    { icon: "beach_access",       iconBg: "bg-sky-100 dark:bg-sky-900/30",     iconColor: "text-sky-600 dark:text-sky-400",     accent: "border-l-sky-400" },
+  KGB:     { icon: "trending_up",        iconBg: "bg-emerald-100 dark:bg-emerald-900/30", iconColor: "text-emerald-600 dark:text-emerald-400", accent: "border-l-emerald-400" },
+  KP:      { icon: "military_tech",      iconBg: "bg-indigo-100 dark:bg-indigo-900/30",  iconColor: "text-indigo-600 dark:text-indigo-400",  accent: "border-l-indigo-400" },
+  MUTASI:  { icon: "swap_horiz",         iconBg: "bg-violet-100 dark:bg-violet-900/30",  iconColor: "text-violet-600 dark:text-violet-400",  accent: "border-l-violet-400" },
+  BINA:    { icon: "school",             iconBg: "bg-amber-100 dark:bg-amber-900/30",    iconColor: "text-amber-600 dark:text-amber-400",    accent: "border-l-amber-400" },
+  PENS:    { icon: "elderly",            iconBg: "bg-rose-100 dark:bg-rose-900/30",      iconColor: "text-rose-600 dark:text-rose-400",      accent: "border-l-rose-400" },
+  PRMJ:    { icon: "sync",              iconBg: "bg-cyan-100 dark:bg-cyan-900/30",      iconColor: "text-cyan-600 dark:text-cyan-400",      accent: "border-l-cyan-400" },
+  PROM:    { icon: "workspace_premium",  iconBg: "bg-yellow-100 dark:bg-yellow-900/30",  iconColor: "text-yellow-600 dark:text-yellow-400",  accent: "border-l-yellow-400" },
+  SOPDATA: { icon: "edit_document",      iconBg: "bg-slate-100 dark:bg-slate-900/30",    iconColor: "text-slate-600 dark:text-slate-400",    accent: "border-l-slate-400" },
+  TB:      { icon: "menu_book",          iconBg: "bg-orange-100 dark:bg-orange-900/30",  iconColor: "text-orange-600 dark:text-orange-400",  accent: "border-l-orange-400" },
+};
+const DEFAULT_THEME: CardTheme = { icon: "description", iconBg: "bg-gray-100", iconColor: "text-gray-500", accent: "border-l-gray-300" };
+
 export default function BuatLayananPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const jenisLayananQuery = useJenisLayanan();
   const createLayanan = useCreateLayanan();
@@ -41,6 +57,23 @@ export default function BuatLayananPage() {
       router.replace("/layanan");
     }
   }, [router, user]);
+
+  // Sync state dengan query param jenisLayananId
+  useEffect(() => {
+    const preselectedId = searchParams.get("jenisLayananId");
+    if (!preselectedId) {
+      // Tidak ada query param → reset ke step 1
+      setSelectedJenis(null);
+      setStep(1);
+      return;
+    }
+    if (!jenisLayananQuery.data) return;
+    const found = jenisLayananQuery.data.find((j) => String(j.id) === preselectedId);
+    if (found) {
+      setSelectedJenis(found);
+      setStep(2);
+    }
+  }, [searchParams, jenisLayananQuery.data]);
 
   const filteredJenis = useMemo(() => {
     const list = jenisLayananQuery.data ?? [];
@@ -77,7 +110,6 @@ export default function BuatLayananPage() {
       const res = await createLayanan.mutateAsync({
         jenisLayananId: selectedJenis.id,
         asnId: selectedAsn.id,
-        unitOrganisasiId: selectedAsn.unitOrganisasiId ?? user.unitOrganisasiId,
         tanggalUsulan,
       });
       router.push(`/layanan/${res.data.data.id}`);
@@ -96,89 +128,74 @@ export default function BuatLayananPage() {
   ];
 
   return (
-    <div className="space-y-[25px]">
+    <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="!mb-1 text-xl font-bold text-black dark:text-white">Buat usulan</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
+        <h1 className="!mb-0.5 text-lg font-bold text-black dark:text-white">Buat usulan</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-xs">
           Lengkapi 3 langkah untuk membuat draft usulan layanan
         </p>
       </div>
 
-      {/* Stepper */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Stepper — horizontal compact */}
+      <div className="flex items-center gap-0">
         {STEPS.map(({ label, icon }, idx) => {
           const num = idx + 1;
           const isDone = step > num;
           const isActive = step === num;
+          const isLast = idx === STEPS.length - 1;
           return (
-            <button
-              key={label}
-              type="button"
-              onClick={() => goTo(num)}
-              className={`rounded-xl border p-4 text-left transition-all ${
-                isDone
-                  ? "bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800/40"
-                  : isActive
-                  ? "bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700"
-                  : "bg-white dark:bg-[#0c1427] border-gray-200 dark:border-[#172036]"
-              }`}
-            >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-2 ${
-                isDone
-                  ? "bg-success-500"
-                  : isActive
-                  ? "bg-primary-500"
-                  : "bg-gray-200 dark:bg-gray-700"
-              }`}>
-                <i className={`material-symbols-outlined !text-[16px] text-white`}>
-                  {isDone ? "check" : icon}
-                </i>
-              </div>
-              <p className={`text-xs font-semibold mb-0.5 ${
-                isDone ? "text-success-600 dark:text-success-400"
-                : isActive ? "text-primary-600 dark:text-primary-400"
-                : "text-gray-400 dark:text-gray-500"
-              }`}>
-                STEP {num}
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-sm font-bold ${
-                  isDone ? "text-success-700 dark:text-success-300"
-                  : isActive ? "text-primary-700 dark:text-primary-300"
-                  : "text-gray-500 dark:text-gray-400"
+            <div key={label} className="flex items-center flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => goTo(num)}
+                className="flex items-center gap-2 shrink-0"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                  isDone ? "bg-success-500" : isActive ? "bg-primary-500" : "bg-gray-200 dark:bg-gray-700"
                 }`}>
-                  {label}
-                </span>
-                {isDone && (
-                  <span className="text-xs text-success-600 dark:text-success-400 font-medium">
-                    ✓ Selesai
-                  </span>
-                )}
-              </div>
-            </button>
+                  <i className="material-symbols-outlined !text-[14px] text-white">
+                    {isDone ? "check" : icon}
+                  </i>
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className={`text-[10px] font-semibold leading-none mb-0.5 ${
+                    isDone ? "text-success-600 dark:text-success-400"
+                    : isActive ? "text-primary-600 dark:text-primary-400"
+                    : "text-gray-400 dark:text-gray-500"
+                  }`}>
+                    LANGKAH {num}
+                  </p>
+                  <p className={`text-xs font-semibold leading-none ${
+                    isDone ? "text-success-700 dark:text-success-300"
+                    : isActive ? "text-primary-700 dark:text-primary-300"
+                    : "text-gray-400 dark:text-gray-500"
+                  }`}>
+                    {label}
+                  </p>
+                </div>
+              </button>
+              {!isLast && (
+                <div className={`flex-1 h-px mx-3 ${
+                  isDone ? "bg-success-300 dark:bg-success-700" : "bg-gray-200 dark:bg-[#172036]"
+                }`} />
+              )}
+            </div>
           );
         })}
       </div>
 
       {/* ── STEP 1 ── */}
       {step === 1 && (
-        <div className="space-y-[20px]">
-          <div>
-            <h5 className="!mb-1 text-base font-bold text-black dark:text-white">Pilih jenis layanan</h5>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Ketuk kartu untuk memilih, lalu lanjut ke step berikutnya.
-            </p>
-          </div>
-
+        <div className="space-y-4">
           {/* Search */}
           <div className="relative">
-            <i className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 !text-[20px]">
+            <i className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 !text-[18px]">
               search
             </i>
             <input
               type="search"
-              className="w-full h-[48px] pl-11 pr-4 rounded-xl border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-black dark:text-white text-sm outline-0 focus:border-primary-500"
+              className="w-full h-10 pl-10 pr-4 rounded-xl border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] text-black dark:text-white text-sm outline-0 focus:border-primary-500"
               placeholder="Cari layanan..."
               value={layananSearch}
               onChange={(e) => setLayananSearch(e.target.value)}
@@ -188,52 +205,63 @@ export default function BuatLayananPage() {
 
           {/* Grid */}
           {jenisLayananQuery.isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {[...Array(9)].map((_, i) => (
-                <div key={i} className="h-36 rounded-2xl bg-gray-100 dark:bg-[#172036] animate-pulse" />
+                <div key={i} className="h-20 rounded-xl bg-gray-100 dark:bg-[#172036] animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {filteredJenis.map((item) => {
                 const isSelected = selectedJenis?.id === item.id;
-                const isTte = item.butuhTteKepalaBadan;
+                const theme = THEME_MAP[item.kode] ?? DEFAULT_THEME;
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => setSelectedJenis(item)}
-                    className={`text-left rounded-2xl border-2 flex flex-col justify-between min-h-[140px] px-6 py-5 transition-all ${
-                      isTte
-                        ? isSelected
-                          ? "border-orange-500 bg-orange-100 shadow-md"
-                          : "border-orange-200 bg-orange-50 hover:border-orange-400 hover:shadow-md"
-                        : isSelected
-                        ? "border-primary-500 bg-primary-100 shadow-md"
-                        : "border-primary-100 bg-primary-50 hover:border-primary-400 hover:shadow-md"
+                    onClick={() => router.replace(`/layanan/buat?jenisLayananId=${item.id}`)}
+                    className={`group text-left rounded-xl border border-l-4 px-4 py-3 transition-all ${theme.accent} ${
+                      isSelected
+                        ? "border-primary-400 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-sm"
+                        : "border-gray-100 dark:border-[#172036] bg-white dark:bg-[#0c1427] hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
                     }`}
                   >
-                    <div>
-                      <p className={`text-xs font-bold tracking-widest uppercase mb-3 ${
-                        isTte ? "text-orange-500" : "text-primary-500"
-                      }`}>
-                        {item.kode}
-                      </p>
-                      <p className="font-bold text-base leading-snug text-gray-800">
-                        {item.nama}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg ${theme.iconBg} flex items-center justify-center shrink-0`}>
+                        <i className={`material-symbols-outlined !text-[17px] ${theme.iconColor}`}>
+                          {theme.icon}
+                        </i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 leading-snug truncate">
+                          {item.nama}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {item.totalSlaHari && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+                              <i className="material-symbols-outlined !text-[10px]">schedule</i>
+                              SLA {item.totalSlaHari} hari
+                            </span>
+                          )}
+                          {item.butuhTteKepalaBadan && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-orange-600 dark:text-orange-400">
+                              <i className="material-symbols-outlined !text-[10px]">draw</i>
+                              TTE Kepala Badan
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <i className="material-symbols-outlined !text-[18px] text-primary-500 shrink-0">
+                          check_circle
+                        </i>
+                      )}
                     </div>
-                    {isTte && (
-                      <span className="mt-4 self-start inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-200 text-orange-700 text-xs font-bold">
-                        <i className="material-symbols-outlined !text-[14px]">draw</i>
-                        Butuh TTE Kepala Badan
-                      </span>
-                    )}
                   </button>
                 );
               })}
               {filteredJenis.length === 0 && (
-                <p className="col-span-3 text-center py-10 text-gray-400">
+                <p className="col-span-3 text-center py-10 text-sm text-gray-400">
                   Tidak ada layanan ditemukan
                 </p>
               )}
@@ -477,14 +505,14 @@ export default function BuatLayananPage() {
       )}
 
       {/* Navigation buttons */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between pt-1">
         {step > 1 ? (
           <button
             type="button"
-            className="inline-flex items-center gap-2 py-[10px] px-[20px] rounded-xl border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:border-gray-400"
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:border-gray-400"
             onClick={() => setStep((s) => s - 1)}
           >
-            <i className="material-symbols-outlined !text-[18px]">arrow_back</i>
+            <i className="material-symbols-outlined !text-[15px]">arrow_back</i>
             Sebelumnya
           </button>
         ) : (
@@ -494,35 +522,35 @@ export default function BuatLayananPage() {
         {step === 1 && (
           <button
             type="button"
-            className="inline-flex items-center gap-2 py-[10px] px-[20px] rounded-xl bg-primary-500 text-white text-sm font-medium disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-primary-500 text-white text-xs font-semibold disabled:opacity-50"
             disabled={!canGoStep2}
             onClick={() => setStep(2)}
           >
             Lanjut ke Data ASN
-            <i className="material-symbols-outlined !text-[18px]">arrow_forward</i>
+            <i className="material-symbols-outlined !text-[15px]">arrow_forward</i>
           </button>
         )}
 
         {step === 2 && (
           <button
             type="button"
-            className="inline-flex items-center gap-2 py-[10px] px-[20px] rounded-xl bg-primary-500 text-white text-sm font-medium disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-primary-500 text-white text-xs font-semibold disabled:opacity-50"
             disabled={!canGoStep3}
             onClick={() => setStep(3)}
           >
             Lanjut ke konfirmasi
-            <i className="material-symbols-outlined !text-[18px]">arrow_forward</i>
+            <i className="material-symbols-outlined !text-[15px]">arrow_forward</i>
           </button>
         )}
 
         {step === 3 && (
           <button
             type="button"
-            className="inline-flex items-center gap-2 py-[10px] px-[24px] rounded-xl bg-primary-500 text-white text-sm font-medium disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-primary-500 text-white text-xs font-semibold disabled:opacity-60"
             disabled={createLayanan.isPending || !selectedJenis || !selectedAsn}
             onClick={() => void handleSubmit()}
           >
-            <i className="material-symbols-outlined !text-[18px]">description</i>
+            <i className="material-symbols-outlined !text-[15px]">description</i>
             {createLayanan.isPending ? "Menyimpan..." : "Buat draft usulan"}
           </button>
         )}

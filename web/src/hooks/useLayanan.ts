@@ -12,7 +12,6 @@ import type {
 export interface CreateLayananPayload {
   jenisLayananId: string;
   asnId: string;
-  unitOrganisasiId: string;
   tanggalUsulan: string;
 }
 

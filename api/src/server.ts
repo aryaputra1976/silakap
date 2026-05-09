@@ -9,6 +9,7 @@ import { logger } from '@/core/logger/logger'
 import { app } from './app'
 import { jalankanSlaChecker } from '@/jobs/sla-checker.job'
 import { jalankanInactiveAccountDisable } from '@/jobs/inactive-account.job'
+import { jalankanPensiunReminder, jalankanPensiunCleanup } from '@/jobs/pensiun-reminder.job'
 
 async function bootstrap(): Promise<void> {
   // Tampilkan hasil audit konfigurasi saat startup
@@ -42,21 +43,28 @@ async function bootstrap(): Promise<void> {
     }
   }, SLA_INTERVAL_MS)
 
-  // Jalankan sekali saat startup, lalu setiap 24 jam
-  const INACTIVE_INTERVAL_MS = 24 * 60 * 60 * 1000
+  const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000
+
   void jalankanInactiveAccountDisable()
   const inactiveCron = setInterval(async () => {
-    try {
-      await jalankanInactiveAccountDisable()
-    } catch (err) {
-      logger.error('Inactive account job gagal', { err })
-    }
-  }, INACTIVE_INTERVAL_MS)
+    try { await jalankanInactiveAccountDisable() } catch (err) { logger.error('Inactive account job gagal', { err }) }
+  }, DAILY_INTERVAL_MS)
+
+  void jalankanPensiunReminder()
+  const pensiunCron = setInterval(async () => {
+    try { await jalankanPensiunReminder() } catch (err) { logger.error('Pensiun scanner gagal', { err }) }
+  }, DAILY_INTERVAL_MS)
+
+  const cleanupCron = setInterval(async () => {
+    try { await jalankanPensiunCleanup() } catch (err) { logger.error('Pensiun cleanup gagal', { err }) }
+  }, DAILY_INTERVAL_MS)
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info(`Menerima ${signal}, mematikan server`)
     clearInterval(slaCron)
     clearInterval(inactiveCron)
+    clearInterval(pensiunCron)
+    clearInterval(cleanupCron)
     server.close(async () => {
       await db.$disconnect()
       logger.info('Database disconnected')

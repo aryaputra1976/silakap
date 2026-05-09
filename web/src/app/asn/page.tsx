@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -169,7 +169,7 @@ export default function AsnPage() {
         ))}
       </div>
 
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <div className="flex flex-col xl:flex-row gap-3">
           <input
             suppressHydrationWarning
@@ -219,7 +219,7 @@ export default function AsnPage() {
         </div>
       ) : null}
 
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         {asnList.isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, index) => (

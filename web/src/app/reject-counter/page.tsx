@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import StatCard from "@/components/silakap/StatCard";
@@ -41,7 +41,7 @@ function CounterList({
   data: { id: string; nomorUsulan: string; asn?: { nama: string }; alasanPenolakan: string | null }[];
 }) {
   return (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+    <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
       <h5>{title}</h5>
       <div className="space-y-3">
         {data.length ? data.map((item) => (

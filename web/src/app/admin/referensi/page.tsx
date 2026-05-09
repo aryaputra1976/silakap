@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -337,7 +337,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`trezo-card rounded-md bg-white p-[20px] dark:bg-[#0c1427] md:p-[25px] ${wide ? "xl:col-span-2" : ""}`}>
+    <section className={`bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036] ${wide ? "xl:col-span-2" : ""}`}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <h5 className="!mb-0">{title}</h5>

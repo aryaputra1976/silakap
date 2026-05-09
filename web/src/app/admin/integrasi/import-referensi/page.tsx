@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import { useRefActions } from "@/hooks/useAdmin";
@@ -152,7 +152,7 @@ export default function ImportReferensiPage() {
         </p>
       </div>
 
-      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+      <div className="bg-white dark:bg-[#0c1427] p-5 rounded-xl border border-gray-100 dark:border-[#172036]">
         <h5>Unit Organisasi & Jabatan</h5>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[20px] mt-4">
           <RefImportCard
